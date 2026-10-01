@@ -955,7 +955,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a50d2c2775bcdce4981085274f4bceae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::playerController
-  playerGunPrefab: {fileID: 3096354731730187425, guid: 11e96cfad4503dc48af6f99972ddad18, type: 3}
+  playerGunPrefab: {fileID: 715509135677632100, guid: 36cfb64fe4107a6469d9c2abe564dc11, type: 3}
   playerProjectilePrefab: {fileID: 6379688039136393155, guid: 841f4b0b2595b2f4399bfbe032a9223f, type: 3}
   gunHoldPoint: {fileID: 175310695}
   currentGun: {fileID: 0}
