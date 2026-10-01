@@ -19,6 +19,12 @@ public class charStats : MonoBehaviour
     public float speed = 5f;
     public float lastAttackTime = 0f;
 
+    [Header("Audio Settings")]
+
+    public string[] damageSounds;
+    public string[] deathSounds;
+
+
     [Header("Invulnerability & Feedback")]
     [SerializeField] private float invulnerabilityDuration = 0.4f;
     [SerializeField] private bool useInvulnerabilityOnDamage = false;
@@ -150,6 +156,13 @@ public class charStats : MonoBehaviour
         if (currentHealth <= 0)
         {
             Die();
+        } else
+        {
+            if (damageSounds != null && damageSounds.Length > 0)
+            {
+                string soundToPlay = damageSounds[UnityEngine.Random.Range(0, damageSounds.Length)];
+                AudioManager.Instance?.PlaySFX(soundToPlay);
+            }
         }
     }
 
@@ -264,7 +277,11 @@ public class charStats : MonoBehaviour
     {
         if (isDead) return;
         isDead = true;
-
+        if (deathSounds != null && deathSounds.Length > 0)
+        {
+            string soundToPlay = deathSounds[UnityEngine.Random.Range(0, deathSounds.Length)];
+            AudioManager.Instance?.PlaySFX(soundToPlay);
+        }
         Debug.Log($"{gameObject.name} has died.");
         OnCharacterDied?.Invoke(gameObject);
 

@@ -985,6 +985,8 @@ MonoBehaviour:
   attackCooldown: 0.8
   speed: 10
   lastAttackTime: 0
+  damageSounds: []
+  deathSounds: []
   invulnerabilityDuration: 0.4
   useInvulnerabilityOnDamage: 0
   knockbackRecoveryTime: 0.25
@@ -1458,6 +1460,12 @@ MonoBehaviour:
   sfxSounds:
   - name: 762x39 Single WAV
     audioClip: {fileID: 8300000, guid: e2c69a064b847ed4bbeec1fe7f91fcb7, type: 3}
+  - name: ZombieHurt1
+    audioClip: {fileID: 8300000, guid: d29ab176fa39244488dc80267c93be73, type: 3}
+  - name: ZombieHurt2
+    audioClip: {fileID: 8300000, guid: 26ad7fe37aeb99849ba05e3e3fa79271, type: 3}
+  - name: ZombieHurt3
+    audioClip: {fileID: 8300000, guid: 647216a956eae0e46be5c75b4613b99b, type: 3}
   musicSource: {fileID: 571279864}
   sfxSource: {fileID: 1598976316}
   musicSlider: {fileID: 0}
