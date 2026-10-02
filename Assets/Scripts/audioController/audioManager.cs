@@ -176,7 +176,7 @@ public class AudioManager : MonoBehaviour
 
         Audio sound = Array.Find(sfxSounds, x => x.name == name);
 
-        if (sound == null)
+        if (sound == null || sound.audioClip == null)
         {
             Debug.LogError($"SFX sound not found: {name}");
             return;
@@ -197,9 +197,9 @@ public class AudioManager : MonoBehaviour
         {
             sfxDuration = finishTime - tempAudioSource.time;
         }
-
-        Destroy(tempSFX, sfxDuration);
-    }
+  
+            Destroy(tempSFX, sfxDuration);
+            }
 
     // public void PlaySFXLoop(string name, float startTime = 0f, float finishTime = 0f)
     // {
