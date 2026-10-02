@@ -11,10 +11,14 @@ public enum SpriteFacingDirection
     Custom = 999        // Use the manual value from customAngleOffset
 }
 
+/// <summary>
+/// Weapon component attached to weapon PREFABS. All values (damage, fire rate, etc.)
+/// are read from the WeaponStats located on the same GameObject.
+/// </summary>
+[RequireComponent(typeof(WeaponStats))]
 public class gun : MonoBehaviour
 {
     [Header("Weapon Configuration")]
-    [SerializeField] private WeaponData weaponData;
     [SerializeField] private GameObject playerProjectilePrefab;
     [SerializeField] private Transform firePoint;
 
@@ -29,31 +33,31 @@ public class gun : MonoBehaviour
     [SerializeField] private bool autoDepthSorting = true;
     [SerializeField] private int baseSortingOrder = 3;
 
-    [Header("Ammo & Status")]
-    [SerializeField] private int currentAmmo = 30;
-    [SerializeField] private int maxAmmo = 30;
-
     [Header("Trajectory / Laser Sight")]
     [SerializeField] private bool showTrajectory = true;
     [SerializeField] private float trajectoryLength = 8f;
     [SerializeField] private LayerMask hitLayers;
     [SerializeField] private LineRenderer lineRenderer;
 
+    // Runtime state
+    private WeaponStats stats;
+    private int currentAmmo;
     private float nextFireTime = 0f;
     private SpriteRenderer spriteRenderer;
     private SpriteRenderer parentSpriteRenderer;
+    private charStats ownerStats;
     private Vector2 aimDirection;
 
     // Events for HUD integration & Scavenge logic
     public event Action<int, int> OnAmmoChanged;
     public event Action OnAmmoDepleted;
-    public event Action<WeaponData> OnWeaponEquipped;
+    public event Action<WeaponStats> OnWeaponEquipped;
 
     // Properties
     public GameObject BulletPrefab { get => playerProjectilePrefab; set => playerProjectilePrefab = value; }
-    public WeaponData CurrentWeaponData => weaponData;
+    public WeaponStats Stats => stats;
     public int CurrentAmmo => currentAmmo;
-    public int MaxAmmo => maxAmmo;
+    public int MaxAmmo => stats != null ? stats.maxAmmo : 0;
     public bool IsAmmoDepleted => currentAmmo <= 0;
     public Vector2 AimDirection => aimDirection;
 
@@ -71,7 +75,17 @@ public class gun : MonoBehaviour
 
     void Awake()
     {
+        stats = GetComponent<WeaponStats>();
+
+        if (stats == null)
+        {
+            // The gun object/prefab in the scene does not have the WeaponStats component yet.
+            // Without that component, ammo = 0 and the weapon cannot fire.
+            Debug.LogWarning($"[{gameObject.name}] WeaponStats component not found! Add it to the weapon prefab.");
+        }
+
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        ownerStats = GetComponentInParent<charStats>();
         if (transform.parent != null)
         {
             parentSpriteRenderer = transform.parent.GetComponentInParent<SpriteRenderer>();
@@ -81,14 +95,11 @@ public class gun : MonoBehaviour
 
     void Start()
     {
-        if (weaponData == null)
-        {
-            EquipWeapon(WeaponData.CreateDefaultPreset(WeaponType.Pistol));
-        }
-        else
-        {
-            EquipWeapon(weaponData);
-        }
+        // Ammo is initialized from the prefab stats when the weapon first becomes active.
+        // (BuffSystem/weapon swap does not call this, so ammo is not reset.)
+        currentAmmo = stats != null ? stats.maxAmmo : 0;
+        OnAmmoChanged?.Invoke(currentAmmo, MaxAmmo);
+        OnWeaponEquipped?.Invoke(stats);
     }
 
     void Update()
@@ -96,24 +107,6 @@ public class gun : MonoBehaviour
         Aim();
         UpdateTrajectory();
         HandleShooting();
-    }
-
-    public void EquipWeapon(WeaponData newWeapon)
-    {
-        if (newWeapon == null) return;
-
-        weaponData = newWeapon;
-        // maxAmmo = newWeapon.maxAmmo;
-        currentAmmo = maxAmmo;
-
-        if (spriteRenderer != null && newWeapon.weaponSprite != null)
-        {
-            spriteRenderer.sprite = newWeapon.weaponSprite;
-        }
-
-        OnAmmoChanged?.Invoke(currentAmmo, maxAmmo);
-        OnWeaponEquipped?.Invoke(weaponData);
-        Debug.Log($"Equipped {newWeapon.weaponName}! Ammo: {currentAmmo}/{maxAmmo}");
     }
 
     private void Aim()
@@ -131,8 +124,8 @@ public class gun : MonoBehaviour
         float angle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
 
         // Determine the sprite orientation correction
-        float baseOffset = spriteDefaultFacing == SpriteFacingDirection.Custom 
-            ? customAngleOffset 
+        float baseOffset = spriteDefaultFacing == SpriteFacingDirection.Custom
+            ? customAngleOffset
             : (float)spriteDefaultFacing;
 
         // Detect whether we are aiming toward the left (left quadrant)
@@ -160,7 +153,11 @@ public class gun : MonoBehaviour
     {
         if (Mouse.current == null) return;
 
-        bool auto = weaponData != null ? weaponData.autoFire : true;
+        // Do not shoot while the buff selection menu is open — clicking a card
+        // would otherwise also fire the gun behind the overlay.
+        if (BuffSelectionUI.IsOpen) return;
+
+        bool auto = stats != null ? stats.autoFire : true;
         bool isTryingToShoot = auto
             ? Mouse.current.leftButton.isPressed
             : Mouse.current.leftButton.wasPressedThisFrame;
@@ -170,7 +167,7 @@ public class gun : MonoBehaviour
             if (currentAmmo > 0)
             {
                 Shoot();
-                float rate = weaponData != null ? weaponData.fireRate : 0.2f;
+                float rate = stats != null ? stats.fireRate : 0.2f;
                 nextFireTime = Time.time + rate;
             }
             else
@@ -191,7 +188,7 @@ public class gun : MonoBehaviour
         }
 
         // currentAmmo--;
-        OnAmmoChanged?.Invoke(currentAmmo, maxAmmo);
+        OnAmmoChanged?.Invoke(currentAmmo, MaxAmmo);
 
         if (currentAmmo <= 0)
         {
@@ -199,12 +196,12 @@ public class gun : MonoBehaviour
         }
 
         Vector3 spawnPos = firePoint != null ? firePoint.position : transform.position;
-        int pellets = weaponData != null ? Mathf.Max(1, weaponData.pelletsCount) : 1;
-        float spreadAngle = weaponData != null ? weaponData.spreadAngle : 0f;
-        float damage = weaponData != null ? weaponData.bulletDamage : 10f;
-        float speed = weaponData != null ? weaponData.bulletSpeed : 15f;
-        float knockback = weaponData != null ? weaponData.knockbackForce : 1f;
-        int pierce = weaponData != null ? weaponData.pierceCount : 0;
+        int pellets = stats != null ? Mathf.Max(1, stats.pelletsCount) : 1;
+        float spreadAngle = stats != null ? stats.spreadAngle : 0f;
+        float damage = stats != null ? stats.bulletDamage : 10f;
+        float speed = stats != null ? stats.bulletSpeed : 15f;
+        float knockback = stats != null ? stats.knockbackForce : 1f;
+        int pierce = stats != null ? stats.pierceCount : 0;
 
         for (int i = 0; i < pellets; i++)
         {
@@ -222,9 +219,39 @@ public class gun : MonoBehaviour
                 proj = bullet.AddComponent<projectile>();
             }
 
-            proj.Setup(shotDir, speed, damage, knockback, pierce);
+            proj.Setup(shotDir, speed, damage, knockback, pierce, ownerStats);
         }
-        AudioManager.Instance.PlaySFX("762x39 Single WAV");
+        // AudioManager.Instance.PlaySFX("762x39 Single WAV");
+    }
+
+    public void RefillAmmo()
+    {
+        currentAmmo = stats != null ? stats.maxAmmo : 0;
+        OnAmmoChanged?.Invoke(currentAmmo, MaxAmmo);
+    }
+
+    public static gun EquipWeaponPrefab(GameObject weaponPrefab, Transform holdPoint, GameObject bulletPrefab)
+    {
+        if (weaponPrefab == null || holdPoint == null) return null;
+
+        // Destroy the old weapon currently attached to the hold point (if any)
+        for (int i = holdPoint.childCount - 1; i >= 0; i--)
+        {
+            Destroy(holdPoint.GetChild(i).gameObject);
+        }
+
+        GameObject gunObj = Instantiate(weaponPrefab, holdPoint.position, Quaternion.identity, holdPoint);
+        if (!gunObj.TryGetComponent<gun>(out gun newGun))
+        {
+            newGun = gunObj.AddComponent<gun>();
+        }
+
+        if (bulletPrefab != null && newGun.BulletPrefab == null)
+        {
+            newGun.BulletPrefab = bulletPrefab;
+        }
+
+        return newGun;
     }
 
     private Vector2 RotateVector(Vector2 v, float degrees)

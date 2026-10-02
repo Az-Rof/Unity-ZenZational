@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7844292775072028411
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3192827501585693516}
+  - component: {fileID: 5619687931597602860}
+  m_Layer: 0
+  m_Name: BuffManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3192827501585693516
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7844292775072028411}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -960, y: -540, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5619687931597602860
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7844292775072028411}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81a3d9f0b1244038a8e104112e4fbc04, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuffSystem
+  cardDefinitions:
+  - buffType: 6
+    cardPrefab: {fileID: 1300980104694548594, guid: 69e5b0007fcb37b4f89813cc561f0272, type: 3}
+  - buffType: 1
+    cardPrefab: {fileID: 1594017473991592623, guid: 53728fa72a9d1ee419f58174bd4692ab, type: 3}
+  - buffType: 7
+    cardPrefab: {fileID: 4045414826948431153, guid: 31c4d7a1ededc6a45931dcc84fde24f5, type: 3}
+  - buffType: 0
+    cardPrefab: {fileID: 683572449564703004, guid: d5c9ecd0202dea84dbad3745d7e349d4, type: 3}
+  - buffType: 0
+    cardPrefab: {fileID: 683572449564703004, guid: d5c9ecd0202dea84dbad3745d7e349d4, type: 3}
+  - buffType: 12
+    cardPrefab: {fileID: 4351615314853494702, guid: abb0bf1198e17514f96fd70214d1431e, type: 3}
+  - buffType: 12
+    cardPrefab: {fileID: 4351615314853494702, guid: abb0bf1198e17514f96fd70214d1431e, type: 3}
+  - buffType: 3
+    cardPrefab: {fileID: 2491788392164927049, guid: 1abca2ce0cb23314db1ff992769b51e2, type: 3}
+  - buffType: 4
+    cardPrefab: {fileID: 1594017473991592623, guid: 51e1bf5ff0e95fc4bb2763b69240c1dc, type: 3}
+  - buffType: 5
+    cardPrefab: {fileID: 1594017473991592623, guid: 55d2414589dd8f04a83f60a8e1535fe4, type: 3}
+  guaranteeCategoryMix: 1

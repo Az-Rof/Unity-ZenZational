@@ -29,6 +29,11 @@ public class charStats : MonoBehaviour
     [SerializeField] private float invulnerabilityDuration = 0.4f;
     [SerializeField] private bool useInvulnerabilityOnDamage = false;
 
+    [Header("Buff Effects")]
+    [SerializeField] private float damageReduction = 0f;
+    [SerializeField] private float vampirismPercent = 0f;
+    [SerializeField] private int reviveCharges = 0;
+
     private bool isInvulnerable = false;
     private bool isDead = false;
     private bool isKnockedBack = false;
@@ -68,6 +73,9 @@ public class charStats : MonoBehaviour
     /// True while this character is actively being knocked back. AI should NOT override velocity during this window.
     /// </summary>
     public bool IsKnockedBack => isKnockedBack;
+    public float DamageReduction => damageReduction;
+    public float VampirismPercent => vampirismPercent;
+    public int ReviveCharges => reviveCharges;
 
     void Awake()
     {
@@ -125,11 +133,22 @@ public class charStats : MonoBehaviour
 
     public void TakeDamage(float damage, Vector2 knockbackDir = default, float knockbackForce = 0f)
     {
-        if (isDead) return;
-        if (isInvulnerable) return;
+        TakeDamageAndGetApplied(damage, knockbackDir, knockbackForce);
+    }
 
+    /// <summary>
+    /// Applies damage and returns the amount of health actually removed.
+    /// Returns zero when the character is dead or invulnerable.
+    /// </summary>
+    public float TakeDamageAndGetApplied(float damage, Vector2 knockbackDir = default, float knockbackForce = 0f)
+    {
+        if (isDead || isInvulnerable) return 0f;
+
+        float healthBeforeDamage = currentHealth;
+        damage *= Mathf.Clamp01(1f - damageReduction);
         currentHealth -= damage;
         currentHealth = Mathf.Max(0, currentHealth);
+        float appliedDamage = healthBeforeDamage - currentHealth;
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
 
         Debug.Log($"{gameObject.name} took {damage} damage! Remaining HP: {currentHealth}");
@@ -164,6 +183,8 @@ public class charStats : MonoBehaviour
                 AudioManager.Instance?.PlaySFX(soundToPlay);
             }
         }
+
+        return appliedDamage;
     }
 
     public void Heal(float amount)
@@ -171,6 +192,33 @@ public class charStats : MonoBehaviour
         if (isDead) return;
         currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
+    }
+
+    public void AddDamageReduction(float amount)
+    {
+        damageReduction = Mathf.Clamp01(damageReduction + amount);
+    }
+
+    public void AddVampirism(float amount)
+    {
+        vampirismPercent = Mathf.Clamp01(vampirismPercent + amount);
+    }
+
+    public void AddReviveCharges(int amount)
+    {
+        reviveCharges = Mathf.Clamp(reviveCharges + amount, 0, 3);
+    }
+
+    public void RestoreFromDeath()
+    {
+        if (!isDead || reviveCharges <= 0) return;
+
+        reviveCharges--;
+        isDead = false;
+        currentHealth = maxHealth;
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+
+        if (spriteRenderer != null) spriteRenderer.enabled = true;
     }
 
     public void ApplyKnockback(Vector2 direction, float force)
@@ -276,6 +324,15 @@ public class charStats : MonoBehaviour
     void Die()
     {
         if (isDead) return;
+
+        if (reviveCharges > 0)
+        {
+            isDead = true;
+            RestoreFromDeath();
+            Debug.Log($"{gameObject.name} revived. Remaining revive charges: {reviveCharges}.");
+            return;
+        }
+
         isDead = true;
         if (deathSounds != null && deathSounds.Length > 0)
         {

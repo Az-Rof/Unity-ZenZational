@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2751509694515861604}
   - component: {fileID: 6343788290858208202}
   - component: {fileID: 3029474289756396941}
+  - component: {fileID: 6588688938723555833}
   m_Layer: 0
   m_Name: Shotgun
   m_TagString: Untagged
@@ -105,18 +106,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a12f733c1f555740aaa245dc5242025, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::gun
-  weaponData: {fileID: 11400000, guid: 75d41db2a8fc28f4fb7929ba7333d043, type: 2}
   playerProjectilePrefab: {fileID: 6379688039136393155, guid: 841f4b0b2595b2f4399bfbe032a9223f, type: 3}
   firePoint: {fileID: 0}
   spriteDefaultFacing: 90
   customAngleOffset: 0
   autoDepthSorting: 1
   baseSortingOrder: 3
-  currentAmmo: 30
-  maxAmmo: 30
   showTrajectory: 1
   trajectoryLength: 8
   hitLayers:
     serializedVersion: 2
     m_Bits: 4294967295
   lineRenderer: {fileID: 0}
+--- !u!114 &6588688938723555833
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3096354731730187425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05fbdc93aefeddd44b4016f3beb6c14e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponStats
+  weaponName: Shotgun
+  fireRate: 0.5
+  autoFire: 0
+  bulletSpeed: 25
+  bulletDamage: 20
+  pelletsCount: 8
+  spreadAngle: 100
+  knockbackForce: 2
+  pierceCount: 0
+  maxAmmo: 30

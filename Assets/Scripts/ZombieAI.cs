@@ -253,14 +253,14 @@ public class ZombieAI : MonoBehaviour
 
     //     Vector3 dropPos = transform.position;
 
-    //     // GDD Rule: When player ammo is depleted (Scavenge Mode), guarantee random weapon drop
+    //     // GDD Rule: When player ammo is depleted (Scavenge Mode), guarantee a random weapon drop
     //     if (isScavengeActive)
     //     {
     //         SpawnWeaponPickup(dropPos);
     //     }
     //     else
     //     {
-    //         // Random chance to drop health pack if player is injured
+    //         // Random chance to drop a health pack if the player is injured
     //         if (cachedPlayerStats != null && cachedPlayerStats.currentHealth < cachedPlayerStats.maxHealth)
     //         {
     //             if (Random.value < defaultHealthDropChance)

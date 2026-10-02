@@ -24,7 +24,7 @@ public class WaveManager : MonoBehaviour
     [Tooltip("Initial delay before the first spawn (seconds)")]
     [SerializeField] private float startDelay = 1f;
 
-    [Header("Stat Override (opsional)")]
+    [Header("Stat Override (optional)")]
     [Tooltip("If true, the zombie prefab stats will be overridden with the values below")]
     [SerializeField] private bool overrideZombieStats = false;
     [SerializeField] private float zombieHealth = 40f;

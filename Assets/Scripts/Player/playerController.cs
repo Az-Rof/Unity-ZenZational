@@ -16,6 +16,7 @@ public enum PlayerAimMode
 public class playerController : MonoBehaviour
 {
     [Header("Gun Setup")]
+    [Tooltip("Weapon PREFAB (must contain the gun + WeaponStats components)")]
     [SerializeField] private GameObject playerGunPrefab;
     [SerializeField] private GameObject playerProjectilePrefab;
     [SerializeField] private Transform gunHoldPoint;
@@ -43,9 +44,7 @@ public class playerController : MonoBehaviour
     public Transform GunHoldPoint => gunHoldPoint;
     public bool IsInScavengeMode => currentGun != null && currentGun.IsAmmoDepleted;
 
-    /// <summary>
     /// The Slider used to visualize the player's health (assigned via Inspector).
-    /// </summary>
     public Slider HPSlider => HP;
 
     void Awake()
@@ -72,10 +71,9 @@ public class playerController : MonoBehaviour
         UpdateAimingAndGunPosition();
     }
 
-    /// <summary>
     /// Wires the health Slider to the player's charStats health events.
     /// The slider updates automatically whenever the player takes damage or heals.
-    /// </summary>
+
     private void SetupHPSlider()
     {
         if (stats == null) return;
@@ -136,6 +134,28 @@ public class playerController : MonoBehaviour
         {
             currentGun.BulletPrefab = playerProjectilePrefab;
         }
+    }
+    /// Swap the player's weapon using a weapon PREFAB (scavenge / pickup system).
+    /// The old weapon is destroyed and the new one is attached to the GunHoldPoint.
+    public gun EquipWeaponPrefab(GameObject weaponPrefab)
+    {
+        currentGun = gun.EquipWeaponPrefab(weaponPrefab, gunHoldPoint, playerProjectilePrefab);
+        return currentGun;
+    }
+
+    /// Swap weapons via a prefab name from the Inspector (e.g. a UI button).
+    public void EquipWeaponPrefabByName(string prefabName)
+    {
+        if (string.IsNullOrEmpty(prefabName)) return;
+
+        GameObject prefab = Resources.Load<GameObject>($"Weapons/{prefabName}");
+        if (prefab == null)
+        {
+            Debug.LogWarning($"[playerController] Weapon prefab '{prefabName}' not found in Resources/Weapons!");
+            return;
+        }
+
+        EquipWeaponPrefab(prefab);
     }
 
     void MovePlayer()
