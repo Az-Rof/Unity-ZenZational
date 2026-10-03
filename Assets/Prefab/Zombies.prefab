@@ -124,6 +124,9 @@ MonoBehaviour:
   deathSounds: []
   invulnerabilityDuration: 0.4
   useInvulnerabilityOnDamage: 0
+  damageReduction: 0
+  vampirismPercent: 0
+  reviveCharges: 0
   knockbackRecoveryTime: 0.25
   maxKnockbackForce: 50
   chainKnockbackTransfer: 0.75
@@ -146,6 +149,9 @@ MonoBehaviour:
   attackWindupDuration: 0.3
   attackEndlagDuration: 0.6
   attackHitRadius: 4
+  attackSounds:
+  - ZombieSwing
+  - ZombieAttackHit
   weaponPickupPrefab: {fileID: 0}
   healthPickupPrefab: {fileID: 0}
   defaultHealthDropChance: 0.15

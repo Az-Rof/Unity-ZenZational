@@ -20,6 +20,7 @@ public class ZombieAI : MonoBehaviour
     [SerializeField] private float attackWindupDuration = 0.3f;
     [SerializeField] private float attackEndlagDuration = 0.6f;
     [SerializeField] private float attackHitRadius = 1.3f;
+    [SerializeField] string[] attackSounds;
 
     [Header("Drops Configuration")]
     [SerializeField] private GameObject weaponPickupPrefab;
@@ -169,7 +170,7 @@ public class ZombieAI : MonoBehaviour
         {
             spriteRenderer.color = new Color(1f, 0.4f, 0.4f, 1f);
         }
-
+        AudioManager.Instance.PlaySFX(attackSounds[0]);
         yield return new WaitForSeconds(attackWindupDuration);
 
         if (spriteRenderer != null)
@@ -190,6 +191,7 @@ public class ZombieAI : MonoBehaviour
                 if (cachedPlayerStats != null)
                 {
                     cachedPlayerStats.TakeDamage(stats.attackPower, knockDir, 4f);
+                    AudioManager.Instance.PlaySFX(attackSounds[1]);
                 }
                 Debug.Log($"{gameObject.name} landed melee strike on Player!");
             }

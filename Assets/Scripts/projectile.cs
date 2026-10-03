@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Hierarchy;
 using UnityEngine;
 
 public class projectile : MonoBehaviour
@@ -6,6 +7,7 @@ public class projectile : MonoBehaviour
     private Vector2 direction;
     private float speed = 10f;
     private float damage = 10f;
+    public float VampDebuffFactor = 0.125f;
     private float knockbackForce = 1f;
     private int remainingPierce = 0;
     private charStats attackerStats;
@@ -74,7 +76,7 @@ public class projectile : MonoBehaviour
                 float appliedDamage = enemyStats.TakeDamageAndGetApplied(damage, direction, knockbackForce);
                 if (appliedDamage > 0f && attackerStats != null && attackerStats.VampirismPercent > 0f)
                 {
-                    attackerStats.Heal(appliedDamage * attackerStats.VampirismPercent);
+                    attackerStats.Heal(appliedDamage * attackerStats.VampirismPercent *VampDebuffFactor);
                 }
             }
 

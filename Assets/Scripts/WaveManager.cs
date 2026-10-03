@@ -54,6 +54,7 @@ public class WaveManager : MonoBehaviour
     void Start()
     {
         FindPlayer();
+        AudioManager.Instance.PlayMusic("WaveMusic");
         spawnLoop = StartCoroutine(SpawnLoopRoutine());
     }
 

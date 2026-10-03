@@ -152,4 +152,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b48e74e9278d496428285fdb0f5f86b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::projectile
+  VampDebuffFactor: 0.0625
   lifetime: 5

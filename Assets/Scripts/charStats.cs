@@ -196,7 +196,7 @@ public class charStats : MonoBehaviour
 
     public void AddDamageReduction(float amount)
     {
-        damageReduction = Mathf.Clamp01(damageReduction + amount);
+        damageReduction = Mathf.Clamp(damageReduction + amount,0,0.5f);
     }
 
     public void AddVampirism(float amount)

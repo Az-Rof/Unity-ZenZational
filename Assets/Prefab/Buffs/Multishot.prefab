@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 8056736133027023111}
   - component: {fileID: 1023810644019625250}
   - component: {fileID: 3414183089362473204}
+  - component: {fileID: 3524906170500133555}
   m_Layer: 5
   m_Name: NameHolder
   m_TagString: Untagged
@@ -36,7 +37,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
   m_AnchoredPosition: {x: 0, y: -70}
-  m_SizeDelta: {x: 400, y: 100}
+  m_SizeDelta: {x: 400, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1023810644019625250
 CanvasRenderer:
@@ -59,14 +60,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0.12941177, b: 0, a: 0.5254902}
+  m_Color: {r: 0, g: 0.115668, b: 0.12941177, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: -9157877907572651509, guid: be3d298bb880cf248bb440dfd266ee41, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -76,6 +77,20 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &3524906170500133555
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1702488255707670225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86710e43de46f6f4bac7c8e50813a599, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.AspectRatioFitter
+  m_AspectMode: 1
+  m_AspectRatio: 2
 --- !u!1 &1898715663837390560
 GameObject:
   m_ObjectHideFlags: 0
@@ -135,14 +150,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0.12941177, b: 0, a: 0.5254902}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 3006939239368446110, guid: 15fa9f8f276533f4b833817716297dea, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -219,8 +234,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: MULTISHOT
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 929df58932756a044b5f64d47b2d9552, type: 2}
-  m_sharedMaterial: {fileID: 2914510676582500897, guid: 929df58932756a044b5f64d47b2d9552, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: b846a29723f466640a7f61eadbd9d5bb, type: 2}
+  m_sharedMaterial: {fileID: 5167461993403528875, guid: b846a29723f466640a7f61eadbd9d5bb, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -244,8 +259,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 48
-  m_fontSizeBase: 48
+  m_fontSize: 60
+  m_fontSizeBase: 60
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -357,7 +372,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 8927043961863651327, guid: 6e66c5ad5196d384c86e7ecc8c2f1a45, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -427,14 +442,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0.12941177, b: 0, a: 0.5254902}
+  m_Color: {r: 0, g: 0.115668, b: 0.12941177, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 3006939239368446110, guid: 15fa9f8f276533f4b833817716297dea, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -637,7 +652,7 @@ GameObject:
   - component: {fileID: 7685858390390097214}
   - component: {fileID: 4047890837879680999}
   m_Layer: 5
-  m_Name: BuffName
+  m_Name: ChooseText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -692,8 +707,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: '[CHOOSE]'
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 929df58932756a044b5f64d47b2d9552, type: 2}
-  m_sharedMaterial: {fileID: 2914510676582500897, guid: 929df58932756a044b5f64d47b2d9552, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: b846a29723f466640a7f61eadbd9d5bb, type: 2}
+  m_sharedMaterial: {fileID: 5167461993403528875, guid: b846a29723f466640a7f61eadbd9d5bb, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -723,7 +738,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 2
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535

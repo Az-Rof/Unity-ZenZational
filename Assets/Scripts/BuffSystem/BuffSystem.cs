@@ -76,9 +76,9 @@ public class BuffSystem : MonoBehaviour
         new BuffOption(BuffType.MovementSpeed, BuffCategory.Character, "Haste", "Multiply movement speed by 15%", 0.15f),
         new BuffOption(BuffType.MaxHealth, BuffCategory.Character, "Extra Health", "Multiply maximum health by 10%", 0.10f),
         new BuffOption(BuffType.Healing, BuffCategory.Character, "Healing", "Restore health to 100%", 1f),
-        new BuffOption(BuffType.Revive, BuffCategory.Character, "Gravebuster", "Return from death [Max 3 revives]", 3f),
-        new BuffOption(BuffType.Unflinching, BuffCategory.Character, "Unflinching", "Take 20% less damage", 0.20f),
-        new BuffOption(BuffType.Vampirism, BuffCategory.Character, "Vampirism", "50% of damage dealt is regained as HEALTH", 0.50f),
+        new BuffOption(BuffType.Revive, BuffCategory.Character, "GRAVEBUSTER", "Return from death [Max 3 revives]", 1f),
+        new BuffOption(BuffType.Unflinching, BuffCategory.Character, "GOLDEFENSIVE", "Take 15% less damage [Max 50%]", 0.20f),
+        new BuffOption(BuffType.Vampirism, BuffCategory.Character, "VAMPIRISM", "50% of damage dealt is regained as HEALTH", 0.50f),
 
         // --- Weapon upgrades ---
         new BuffOption(BuffType.AttackDamage, BuffCategory.Gun, "Upper Caliber", "Increase bullet damage by 50%", 0.50f),
