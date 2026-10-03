@@ -175,7 +175,8 @@ public class charStats : MonoBehaviour
         if (currentHealth <= 0)
         {
             Die();
-        } else
+        }
+        else
         {
             if (damageSounds != null && damageSounds.Length > 0)
             {
@@ -196,7 +197,7 @@ public class charStats : MonoBehaviour
 
     public void AddDamageReduction(float amount)
     {
-        damageReduction = Mathf.Clamp(damageReduction + amount,0,0.5f);
+        damageReduction = Mathf.Clamp(damageReduction + amount, 0, 0.5f);
     }
 
     public void AddVampirism(float amount)
@@ -343,5 +344,12 @@ public class charStats : MonoBehaviour
         OnCharacterDied?.Invoke(gameObject);
 
         Destroy(gameObject);
+
+        // If this gameobject == player
+        if (this.gameObject.tag == "Player" || this.gameObject.name == "Player")
+        {
+            Titlescreen ts = FindAnyObjectByType<Titlescreen>();
+            ts.gameOver();
+        }
     }
 }

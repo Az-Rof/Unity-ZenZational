@@ -198,7 +198,7 @@ public class playerController : MonoBehaviour
 
     private void UpdateAimingAndGunPosition()
     {
-        if (Mouse.current == null || Camera.main == null) return;
+        if (Mouse.current == null || Camera.main == null || Time.timeScale == 0) return;
 
         Vector2 mouseScreenPos = Mouse.current.position.ReadValue();
         Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(new Vector3(mouseScreenPos.x, mouseScreenPos.y, 0f));

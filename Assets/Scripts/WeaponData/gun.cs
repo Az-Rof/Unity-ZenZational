@@ -104,9 +104,12 @@ public class gun : MonoBehaviour
 
     void Update()
     {
-        Aim();
-        UpdateTrajectory();
-        HandleShooting();
+        if (Time.timeScale != 0)
+        {
+            Aim();
+            UpdateTrajectory();
+            HandleShooting();
+        }
     }
 
     private void Aim()
