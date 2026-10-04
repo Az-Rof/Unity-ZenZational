@@ -69,7 +69,7 @@ public class BuffSystem : MonoBehaviour
     [Header("Buff Selection")]
     [Tooltip("Ensure every menu appearance contains at least 1 Character buff & 1 Gun buff")]
     [SerializeField] private bool guaranteeCategoryMix = false;
-
+    [SerializeField] GameObject buffmenu;
     private readonly List<BuffOption> availableBuffPool = new List<BuffOption>()
     {
         // --- Player stats ---
@@ -109,6 +109,7 @@ public class BuffSystem : MonoBehaviour
         {
             Debug.LogWarning("UI isn't found");
         }
+        buffmenu.SetActive(true);
     }
 
     private void ApplyCardDefinitions()
@@ -124,17 +125,7 @@ public class BuffSystem : MonoBehaviour
         }
     }
 
-    void Update()
-    {
-        // TODO(playtest): press B to open the buff menu manually.
-        // Remove this once WaveManager / boss kills trigger automatic selection.
-        if (Keyboard.current == null || BuffSelectionUI.IsOpen) return;
-
-        if (Keyboard.current.bKey.wasPressedThisFrame)
-        {
-            TriggerBuffSelection();
-        }
-    }
+  
 
     // Build the buff pool from the configured character and weapon upgrades.
     // Draw 3 random buffs. If guaranteeCategoryMix is enabled, at least 1
@@ -179,7 +170,7 @@ public class BuffSystem : MonoBehaviour
     public void TriggerBuffSelection()
     {
         if (BuffSelectionUI.IsOpen) return; // currently choosing
-
+        
         List<BuffOption> choices = GetThreeRandomBuffs();
 
         // Call the UI DIRECTLY (not via event) so it still works even when the
@@ -320,8 +311,9 @@ public class BuffSystem : MonoBehaviour
             case BuffType.MaxHealth:
                 if (stats != null)
                 {
+                    float ratio = stats.currentHealth / stats.maxHealth; // preserve current health percentage
                     stats.maxHealth *= 1f + buff.value;
-                    stats.Heal(stats.maxHealth);
+                    stats.currentHealth = stats.maxHealth * ratio; // adjust current health to maintain the same percentage
                 }
                 break;
 
@@ -393,6 +385,7 @@ public class BuffSystem : MonoBehaviour
                 if (currentGun != null && currentGun.Stats != null)
                 {
                     currentGun.Stats.pelletsCount += (int)buff.value;
+                    currentGun.Stats.spreadAngle += 15;
                 }
                 break;
 

@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 6089437821577210353}
   - component: {fileID: 8540548732145156540}
   - component: {fileID: 3262831828187952285}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Zombies
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -85,8 +85,8 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -9095717837082945937, guid: 207ee8102dd4143d288186ef0be518ee, type: 3}
-  m_Color: {r: 0, g: 1, b: 0.084089994, a: 1}
+  m_Sprite: {fileID: 6019453725058403666, guid: e0cabbc85deab4e4f899ca9e7d6e501f, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -121,7 +121,10 @@ MonoBehaviour:
   - ZombieHurt1
   - ZombieHurt2
   - ZombieHurt3
-  deathSounds: []
+  deathSounds:
+  - ZombieDeath1
+  - ZombieDeath2
+  - ZombieDeath3
   invulnerabilityDuration: 0.4
   useInvulnerabilityOnDamage: 0
   damageReduction: 0
@@ -146,6 +149,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ZombieAI
   currentState: 0
   targetPlayer: {fileID: 0}
+  soloSpeedCap: 15
+  swarmSpeed: 1
+  swarmDamage: 10
+  soloDamage: 20
+  swarmRadius: 6
+  maxSwarmSize: 10
+  zMask:
+    serializedVersion: 2
+    m_Bits: 64
   attackWindupDuration: 0.3
   attackEndlagDuration: 0.6
   attackHitRadius: 4
@@ -193,7 +205,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1, y: 2}
+    oldSize: {x: 2.92, y: 4.22}
     newSize: {x: 1, y: 2}
     adaptiveTilingThreshold: 0.5
     drawMode: 0

@@ -12,6 +12,12 @@ public class Titlescreen : MonoBehaviour
 
     void Start()
     {
+        if (SceneManager.GetActiveScene().buildIndex == 0)
+        {
+            Time.timeScale = 1f;
+            AudioManager.Instance.PlayMusic("Titlescreen");
+            Cursor.visible = true;
+        }
     }
 
     void Update()

@@ -13,6 +13,9 @@ public class WaveManager : MonoBehaviour
 
     [Header("Spawn Configuration")]
     [SerializeField] private GameObject zombiePrefab;
+    [SerializeField] int StartingWaveSize;
+    [Tooltip("Amount to increase wave size by")]
+    [SerializeField] int WaveTide;
     [Tooltip("Time interval between zombie spawns (seconds)")]
     [SerializeField] private float spawnInterval = 2f;
     [Tooltip("Maximum number of zombies alive at the same time")]
@@ -29,6 +32,7 @@ public class WaveManager : MonoBehaviour
     [SerializeField] private bool overrideZombieStats = false;
     [SerializeField] private float zombieHealth = 40f;
     [SerializeField] private float zombieSpeed = 3f;
+    public int wC = 0;
 
     [Header("State")]
     [Tooltip("Uncheck to stop spawning via the Inspector during play")]
@@ -87,16 +91,30 @@ public class WaveManager : MonoBehaviour
 
     private IEnumerator SpawnLoopRoutine()
     {
-        yield return new WaitForSeconds(startDelay);
+        while (true) {
+            int Zmb = 0;
+            int wS = StartingWaveSize + (WaveTide * wC);
+            yield return new WaitForSeconds(startDelay);
 
-        while (true)
-        {
-            if (spawnEnabled && activeZombies.Count < maxConcurrentZombies)
+            while (Zmb < wS)
             {
-                SpawnZombie();
-            }
+                if (spawnEnabled && activeZombies.Count < maxConcurrentZombies)
+                {
+                    SpawnZombie();
+                    Zmb++;
+                }
 
-            yield return new WaitForSeconds(spawnInterval);
+                yield return new WaitForSeconds(spawnInterval);
+            }
+            yield return new WaitForSeconds(0.1f);
+            while (lastReportedCount > 0)
+            {
+                yield return new WaitForSeconds(0.1f);
+            }
+            yield return new WaitForSeconds(startDelay);
+            BuffSystem.Instance.TriggerBuffSelection();
+            Zmb = 0;
+            wC++;
         }
     }
 

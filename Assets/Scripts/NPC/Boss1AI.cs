@@ -1,37 +1,42 @@
 using System.Collections;
 using System.Drawing;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using static UnityEngine.UI.Image;
 
 [RequireComponent(typeof(charStats))]
-public class ZombieAI : MonoBehaviour
+public class Boss1AI : MonoBehaviour
 {
-    public enum ZombieState
+    public enum Boss1State
     {
         Chase,
         WindupAttack,
+        OffScreen,
+        ThrowingBarrel,
         EndlagRecovery,
         Stunned
     }
 
     [Header("State & Targeting")]
-    [SerializeField] private ZombieState currentState = ZombieState.Chase;
+    [SerializeField] private Boss1State currentState = Boss1State.Chase;
     [SerializeField] private Transform targetPlayer;
 
-    [Header("External Stats")]
-    [SerializeField] private float soloSpeedCap = 18f;
-    [SerializeField] private float swarmSpeed = 6f;
-    [SerializeField] private float swarmDamage = 5f;
-    [SerializeField] private float soloDamage = 20f;
-    [SerializeField] private float swarmRadius = 5f;
-    [SerializeField] private float maxSwarmSize = 10f;
-    [SerializeField] private LayerMask zMask;
+    [Header("Boss Stats")]
+    [SerializeField] private float directLandingDamage = 75f;
+    [SerializeField] private float barrelDamage = 20f;
+    [SerializeField] private float shockwaveDamage = 10f;
+    [SerializeField] private float screenRadius = 10f;
+    [SerializeField] private float jumpEndlagDuration = 1.5f;
 
-    [Header("Attack Settings")]
+
+   [Header("Attack Settings")]
     [SerializeField] private float attackWindupDuration = 0.3f;
     [SerializeField] private float attackEndlagDuration = 0.6f;
     [SerializeField] private float attackHitRadius = 1.3f;
     [SerializeField] string[] attackSounds;
+    [SerializeField] GameObject attackCirc;
+    [SerializeField] GameObject barrel;
+
 
     [Header("Drops Configuration")]
     [SerializeField] private GameObject weaponPickupPrefab;
@@ -44,9 +49,8 @@ public class ZombieAI : MonoBehaviour
     private playerController cachedPlayerCtrl;
     private charStats cachedPlayerStats;
     private float stateTimer = 0f;
-    int currentSwarmSize;
 
-    public ZombieState CurrentState => currentState;
+    public Boss1State CurrentState => currentState;
 
     void Awake()
     {
@@ -73,19 +77,24 @@ public class ZombieAI : MonoBehaviour
 
         switch (currentState)
         {
-            case ZombieState.Chase:
+            case Boss1State.Chase:
                 HandleChaseState();
                 break;
-
-            case ZombieState.WindupAttack:
+            case Boss1State.OffScreen:
+                // Jump Attack
+                StartCoroutine(PerformOffscreenJump());
+                break;
+            case Boss1State.ThrowingBarrel:
+                break;
+            case Boss1State.WindupAttack:
                 // Actively winding up attack
                 break;
 
-            case ZombieState.EndlagRecovery:
+            case Boss1State.EndlagRecovery:
                 HandleEndlagState();
                 break;
 
-            case ZombieState.Stunned:
+            case Boss1State.Stunned:
                 // Awaiting stun expiry
                 break;
         }
@@ -140,27 +149,33 @@ public class ZombieAI : MonoBehaviour
             }
             return;
         }
-        Collider2D[] zombies = Physics2D.OverlapCircleAll(
-            transform.position,
-            swarmRadius,
-            zMask
-        );
 
-        int zombieCount = zombies.Length;
-        currentSwarmSize = zombieCount;
-        stats.attackPower = Mathf.Lerp(soloDamage, swarmDamage, Mathf.Clamp01((float)zombieCount / maxSwarmSize));
 
-        float swarmPercent = Mathf.Clamp01((float)zombieCount / maxSwarmSize);
 
-        stats.speed = Mathf.Lerp(soloSpeedCap, swarmSpeed, swarmPercent);
 
         float distance = Vector2.Distance(transform.position, targetPlayer.position);
+        if (distance >= screenRadius)
+        {
+            currentState = Boss1State.OffScreen;
+            return;
+        }
 
         // If within melee reach, enter WindupAttack state
         if (distance <= stats.attackRange)
         {
             StartCoroutine(PerformMeleeAttackRoutine());
             return;
+        } else
+        {
+            if (distance >= screenRadius)
+            {
+                currentState = Boss1State.OffScreen;
+                return;
+            } else
+            {
+                StartCoroutine(PerformBarrelThrow());
+                return;
+            }
         }
 
         // Navigate directly towards player coordinates
@@ -184,7 +199,6 @@ public class ZombieAI : MonoBehaviour
 
     private IEnumerator PerformMeleeAttackRoutine()
     {
-        currentState = ZombieState.WindupAttack;
 
         // Halt movement during windup
         if (rb2d != null) rb2d.linearVelocity = Vector2.zero;
@@ -228,12 +242,80 @@ public class ZombieAI : MonoBehaviour
         }
 
         // Transition to Endlag / Recovery state
-        currentState = ZombieState.EndlagRecovery;
+        currentState = Boss1State.EndlagRecovery;
         stateTimer = attackEndlagDuration;
+    }
+
+    private IEnumerator PerformBarrelThrow()
+    {
+        float projectedHP = cachedPlayerStats.currentHealth;
+        currentState = Boss1State.WindupAttack;
+        for (int i = 0; i < 10; i++)
+        {
+            yield return new WaitForSeconds(attackWindupDuration);
+            GameObject barrelInstance = Instantiate(barrel, transform.position, Quaternion.identity);
+            ExplosiveBarrel br = barrelInstance.GetComponent<ExplosiveBarrel>();
+            float horizontal = 0f;
+            float vertical = 0f;
+
+            if (Keyboard.current != null)
+            {
+                if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) horizontal -= 1f;
+                if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) horizontal += 1f;
+                if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) vertical += 1f;
+                if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) vertical -= 1f;
+            }
+            float ran = Random.Range(25f, 100f)/100f;
+            br.landingPos = targetPlayer.position + new Vector3(horizontal*cachedPlayerStats.speed *ran, vertical*cachedPlayerStats.speed*ran, 0);
+            yield return new WaitForSeconds(0.25f);
+        }
+        if (cachedPlayerStats.currentHealth < projectedHP)
+        {
+            Debug.Log($"{gameObject.name} landed barrel throw on Player!");
+            currentState = Boss1State.Chase;
+        }
+        else
+        {
+            Debug.Log($"{gameObject.name} barrel throw missed (Player dodged).");
+            currentState = Boss1State.OffScreen;
+        }
+
+    }
+
+    private IEnumerator PerformOffscreenJump()
+    {
+        currentState = Boss1State.WindupAttack;
+        GameObject aC = Instantiate(attackCirc, targetPlayer.position, Quaternion.identity);
+        SpriteRenderer acSR = aC.GetComponent<SpriteRenderer>();
+        while (acSR != null && acSR.color.a < 0.5f)
+        {
+            acSR.color = new UnityEngine.Color(acSR.color.r, acSR.color.g, acSR.color.b, acSR.color.a + 0.01f);
+            yield return new WaitForSeconds(0.05f);
+        }
+        transform.position = aC.transform.position;
+        Destroy(aC);
+        float distance = Vector2.Distance(transform.position, targetPlayer.position);
+        if (distance < aC.transform.localScale.y/2)
+        {
+            Vector2 knockDir = ((Vector2)targetPlayer.position - (Vector2)transform.position).normalized;
+            if (cachedPlayerStats != null)
+            {
+                cachedPlayerStats.TakeDamage(directLandingDamage, knockDir, 4f);
+            }
+            Debug.Log($"{gameObject.name} landed jump strike on Player!");
+
+        }
+        else
+        {
+            Debug.Log($"{gameObject.name} jump attack missed (Player dodged).");
+            currentState = Boss1State.EndlagRecovery;
+            stateTimer = jumpEndlagDuration;
+        }
     }
 
     private void HandleEndlagState()
     {
+
         // Physics owns the velocity while knocked back — do not zero it out.
         if (!stats.IsKnockedBack && rb2d != null) rb2d.linearVelocity = Vector2.zero;
 
@@ -241,7 +323,7 @@ public class ZombieAI : MonoBehaviour
         if (stateTimer <= 0f)
         {
             // End of recovery window; return to Range Check & Chase
-            currentState = ZombieState.Chase;
+            currentState = Boss1State.Chase;
         }
     }
 
@@ -252,14 +334,14 @@ public class ZombieAI : MonoBehaviour
 
     private IEnumerator StunRoutine(float duration)
     {
-        currentState = ZombieState.Stunned;
+        currentState = Boss1State.Stunned;
         if (!stats.IsKnockedBack && rb2d != null) rb2d.linearVelocity = Vector2.zero;
 
         yield return new WaitForSeconds(duration);
 
-        if (currentState == ZombieState.Stunned)
+        if (currentState == Boss1State.Stunned)
         {
-            currentState = ZombieState.Chase;
+            currentState = Boss1State.Chase;
         }
     }
 

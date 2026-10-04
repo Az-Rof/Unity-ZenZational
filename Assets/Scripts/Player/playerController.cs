@@ -36,7 +36,7 @@ public class playerController : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private Vector2 aimDirection;
 
-    [SerializeField] Slider HP;
+    [SerializeField] Image HP;
 
     // Get & Set
     public charStats Stats { get => stats; set => stats = value; }
@@ -45,7 +45,6 @@ public class playerController : MonoBehaviour
     public bool IsInScavengeMode => currentGun != null && currentGun.IsAmmoDepleted;
 
     /// The Slider used to visualize the player's health (assigned via Inspector).
-    public Slider HPSlider => HP;
 
     void Awake()
     {
@@ -85,9 +84,7 @@ public class playerController : MonoBehaviour
         // Initialize slider range and show the starting value
         if (HP != null)
         {
-            HP.minValue = 0f;
-            HP.maxValue = stats.maxHealth;
-            HP.value = stats.currentHealth;
+            HP.fillAmount = Mathf.Clamp01(stats.currentHealth / stats.maxHealth );
         }
     }
 
@@ -95,12 +92,8 @@ public class playerController : MonoBehaviour
     {
         if (HP == null) return;
 
-        // Keep the slider range in sync (max HP can change via buffs)
-        if (!Mathf.Approximately(HP.maxValue, maxHealth))
-        {
-            HP.maxValue = maxHealth;
-        }
-        HP.value = currentHealth;
+      
+        HP.fillAmount = Mathf.Clamp01(stats.currentHealth / stats.maxHealth);
     }
 
     private void InitializeGun()
