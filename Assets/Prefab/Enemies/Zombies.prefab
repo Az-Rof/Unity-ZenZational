@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 6089437821577210353}
   - component: {fileID: 8540548732145156540}
   - component: {fileID: 3262831828187952285}
+  - component: {fileID: 8495246463040656704}
   m_Layer: 6
   m_Name: Zombies
   m_TagString: Enemy
@@ -31,7 +32,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -9.34263, y: 14.80214, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 2, y: 2, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -85,12 +86,12 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 6019453725058403666, guid: e0cabbc85deab4e4f899ca9e7d6e501f, type: 3}
+  m_Sprite: {fileID: -4705658507038287323, guid: 581525623ba1e7941b7d62a7b656cd64, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 1, y: 2}
+  m_Size: {x: 0.66, y: 1.25}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -113,7 +114,7 @@ MonoBehaviour:
   currentHealth: 0
   maxHealth: 100
   attackPower: 10
-  attackRange: 1.2
+  attackRange: 2
   attackCooldown: 0.8
   speed: 5
   lastAttackTime: 0
@@ -201,17 +202,17 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0, y: -0.15238905}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 2.92, y: 4.22}
-    newSize: {x: 1, y: 2}
+    oldSize: {x: 0.74, y: 0.97}
+    newSize: {x: 0.66, y: 1.25}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1, y: 2}
+  m_Size: {x: 1, y: 0.87509155}
   m_EdgeRadius: 0
 --- !u!50 &3262831828187952285
 Rigidbody2D:
@@ -240,3 +241,29 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
+--- !u!114 &8495246463040656704
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5935649346357155513}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccd1a5d7d1dcadd4cadfc1491978b964, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  spriteRenderer: {fileID: 1803590458776616560}
+  animations:
+  - name: Walking
+    resourceDirectory: Animations/Characters/Zombie/Walk
+    framePrefix: ZombieWalk
+    FPS: 12
+    loop: 1
+    frames: []
+  - name: Attack
+    resourceDirectory: Animations/Characters/Zombie/Attack
+    framePrefix: 
+    FPS: 12
+    loop: 0
+    frames: []

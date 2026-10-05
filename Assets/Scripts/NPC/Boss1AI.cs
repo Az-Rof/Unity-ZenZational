@@ -27,7 +27,7 @@ public class Boss1AI : MonoBehaviour
     [SerializeField] private float shockwaveDamage = 10f;
     [SerializeField] private float screenRadius = 10f;
     [SerializeField] private float jumpEndlagDuration = 1.5f;
-
+    [SerializeField] private ParticleSystem shockwave;
 
    [Header("Attack Settings")]
     [SerializeField] private float attackWindupDuration = 0.3f;
@@ -36,6 +36,8 @@ public class Boss1AI : MonoBehaviour
     [SerializeField] string[] attackSounds;
     [SerializeField] GameObject attackCirc;
     [SerializeField] GameObject barrel;
+    [SerializeField] GameObject shockwavePrefab;
+
 
 
     [Header("Drops Configuration")]
@@ -49,6 +51,11 @@ public class Boss1AI : MonoBehaviour
     private playerController cachedPlayerCtrl;
     private charStats cachedPlayerStats;
     private float stateTimer = 0f;
+    ZombieAnimator ZA;
+
+    bool walking = false;
+    float horizontal = 0f;
+    float vertical = 0f;
 
     public Boss1State CurrentState => currentState;
 
@@ -63,6 +70,7 @@ public class Boss1AI : MonoBehaviour
     {
         FindPlayerTarget();
         stats.OnCharacterDied += HandleDeath;
+        ZA = GetComponent<ZombieAnimator>();
     }
 
     void Update()   
@@ -74,6 +82,33 @@ public class Boss1AI : MonoBehaviour
             FindPlayerTarget();
             if (targetPlayer == null) return;
         }
+
+        if (ZA != null)
+        {
+            if (!walking)
+            {
+                walking = true;
+                ZA.PlayAnimation("Walking");
+            }
+        }
+        horizontal = 0f;
+        vertical = 0f;  
+        if (Keyboard.current != null)
+        {
+            if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) horizontal = -1f;
+            if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) horizontal = 1f;
+            if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) vertical = 1f;
+            if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) vertical = -1f;
+        }
+
+        // Get the direction vector from current position to target
+        Vector2 directionl = (Vector2)targetPlayer.position - (Vector2)transform.position;
+
+        // Calculate the angle in degrees
+        float angle = Mathf.Atan2(directionl.y, directionl.x) * Mathf.Rad2Deg;
+
+        // Apply rotation around the Z-axis (adjust angle offset if your sprite points UP instead of RIGHT)
+        transform.rotation = Quaternion.AngleAxis(angle + 90, Vector3.forward);
 
         switch (currentState)
         {
@@ -171,7 +206,7 @@ public class Boss1AI : MonoBehaviour
             {
                 currentState = Boss1State.OffScreen;
                 return;
-            } else
+            } else if (distance <= screenRadius && distance > stats.speed)
             {
                 StartCoroutine(PerformBarrelThrow());
                 return;
@@ -199,7 +234,7 @@ public class Boss1AI : MonoBehaviour
 
     private IEnumerator PerformMeleeAttackRoutine()
     {
-
+        currentState = Boss1State.WindupAttack;
         // Halt movement during windup
         if (rb2d != null) rb2d.linearVelocity = Vector2.zero;
 
@@ -243,7 +278,7 @@ public class Boss1AI : MonoBehaviour
 
         // Transition to Endlag / Recovery state
         currentState = Boss1State.EndlagRecovery;
-        stateTimer = attackEndlagDuration;
+        stateTimer = 0.5f;
     }
 
     private IEnumerator PerformBarrelThrow()
@@ -255,19 +290,14 @@ public class Boss1AI : MonoBehaviour
             yield return new WaitForSeconds(attackWindupDuration);
             GameObject barrelInstance = Instantiate(barrel, transform.position, Quaternion.identity);
             ExplosiveBarrel br = barrelInstance.GetComponent<ExplosiveBarrel>();
-            float horizontal = 0f;
-            float vertical = 0f;
+        
 
-            if (Keyboard.current != null)
-            {
-                if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) horizontal -= 1f;
-                if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) horizontal += 1f;
-                if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) vertical += 1f;
-                if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) vertical -= 1f;
-            }
+           
             float ran = Random.Range(25f, 100f)/100f;
             br.landingPos = targetPlayer.position + new Vector3(horizontal*cachedPlayerStats.speed *ran, vertical*cachedPlayerStats.speed*ran, 0);
-            yield return new WaitForSeconds(0.25f);
+            Vector2 direction = ((Vector2)targetPlayer.position - (Vector2)transform.position).normalized;
+            rb2d.linearVelocity = direction * stats.speed/2;
+            yield return new WaitForSeconds(0.125f * Random.Range(2f,8f));
         }
         if (cachedPlayerStats.currentHealth < projectedHP)
         {
@@ -284,16 +314,45 @@ public class Boss1AI : MonoBehaviour
 
     private IEnumerator PerformOffscreenJump()
     {
+                rb2d.linearVelocity = Vector2.zero;
         currentState = Boss1State.WindupAttack;
-        GameObject aC = Instantiate(attackCirc, targetPlayer.position, Quaternion.identity);
+        GameObject aC = Instantiate(attackCirc, targetPlayer.position + new Vector3(horizontal * cachedPlayerStats.speed, vertical * cachedPlayerStats.speed, 0), Quaternion.identity);
+        aC.transform.localScale = new Vector2(15,15);
         SpriteRenderer acSR = aC.GetComponent<SpriteRenderer>();
-        while (acSR != null && acSR.color.a < 0.5f)
+        float duration = Vector2.Distance(transform.position, aC.transform.position) / 15f;
+        float elapsedTime = 0f;
+        Vector2 DefaultSize = transform.localScale;
+        Vector2 HeightSize = transform.localScale * 2;
+        Vector2 startPos = transform.position;
+        while (elapsedTime < duration)
         {
-            acSR.color = new UnityEngine.Color(acSR.color.r, acSR.color.g, acSR.color.b, acSR.color.a + 0.01f);
-            yield return new WaitForSeconds(0.05f);
+            if (elapsedTime < duration / 2)
+            {
+                transform.localScale = Vector2.Lerp(
+                    DefaultSize,
+                    HeightSize,
+                    elapsedTime / (duration / 2)
+                );
+            }
+            else
+            {
+                transform.localScale = Vector2.Lerp(
+                    HeightSize,
+                    DefaultSize,
+                    (elapsedTime - duration / 2) / (duration / 2)
+                );
+            }
+            acSR.color = new UnityEngine.Color(acSR.color.r, acSR.color.g, acSR.color.b, Mathf.Lerp(0f, 0.5f, elapsedTime / duration));
+            transform.position = Vector2.Lerp(startPos, aC.transform.position, elapsedTime / duration);
+            elapsedTime += Time.deltaTime;
+            yield return null;
         }
-        transform.position = aC.transform.position;
         Destroy(aC);
+        shockwave.Play();
+        AudioManager.Instance.PlaySFX(attackSounds[2]);
+        GameObject shock = Instantiate(shockwavePrefab, transform.position, Quaternion.identity);
+        shock.transform.rotation = transform.rotation * Quaternion.Euler(0, 0, -90f);
+        Destroy(shock, 15f);
         float distance = Vector2.Distance(transform.position, targetPlayer.position);
         if (distance < aC.transform.localScale.y/2)
         {
@@ -303,7 +362,8 @@ public class Boss1AI : MonoBehaviour
                 cachedPlayerStats.TakeDamage(directLandingDamage, knockDir, 4f);
             }
             Debug.Log($"{gameObject.name} landed jump strike on Player!");
-
+            currentState = Boss1State.EndlagRecovery;
+            stateTimer = jumpEndlagDuration;
         }
         else
         {

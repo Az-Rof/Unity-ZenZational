@@ -13,6 +13,8 @@ public class WaveManager : MonoBehaviour
 
     [Header("Spawn Configuration")]
     [SerializeField] private GameObject zombiePrefab;
+    [SerializeField] private GameObject boss1Prefab;
+    [SerializeField] private waveEvents[] events;
     [SerializeField] int StartingWaveSize;
     [Tooltip("Amount to increase wave size by")]
     [SerializeField] int WaveTide;
@@ -92,6 +94,33 @@ public class WaveManager : MonoBehaviour
     private IEnumerator SpawnLoopRoutine()
     {
         while (true) {
+
+            foreach (var waveEvent in events)
+            {
+                if (waveEvent.waveNumber == wC)
+                {
+                    if (waveEvent.eventName == "SpawnBoss1")
+                    {
+                        int Zmb2 = 0;
+                        int wS2 = StartingWaveSize + (WaveTide * wC);
+                        yield return new WaitForSeconds(startDelay);
+
+                        SpawnBoss1();
+                        Zmb2++;
+
+                        yield return new WaitForSeconds(0.1f);
+                        while (lastReportedCount > 0)
+                        {
+                            yield return new WaitForSeconds(0.1f);
+                        }
+                        yield return new WaitForSeconds(startDelay);
+                        BuffSystem.Instance.TriggerBuffSelection();
+                        Zmb2 = 0;
+                        wC++;
+                        break;
+                    }
+                }
+            }
             int Zmb = 0;
             int wS = StartingWaveSize + (WaveTide * wC);
             yield return new WaitForSeconds(startDelay);
@@ -146,6 +175,35 @@ public class WaveManager : MonoBehaviour
             lastReportedCount = -1; // force refresh of the count event
         }
     }
+
+    private void SpawnBoss1()
+    {
+        if (playerTransform == null)
+        {
+            FindPlayer();
+            if (playerTransform == null) return; // Player is not in the scene yet
+        }
+
+        Vector3 spawnPos = GetRandomSpawnPositionAroundPlayer();
+
+        GameObject zombie;
+        if (boss1Prefab != null)
+        {
+            zombie = Instantiate(boss1Prefab, new Vector2(30,0), Quaternion.identity);
+        }
+        else
+        {
+            // Fallback: create a runtime zombie if no prefab is assigned in the Inspector
+            zombie = CreateRuntimeZombie(spawnPos);
+        }
+
+        if (zombie != null)
+        {
+            activeZombies.Add(zombie);
+            lastReportedCount = -1; // force refresh of the count event
+        }
+    }
+
 
     /// <summary> Random position on a ring (donut) around the player </summary>
     private Vector3 GetRandomSpawnPositionAroundPlayer()

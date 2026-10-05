@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Drawing;
 using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
 using static UnityEngine.UI.Image;
 
 [RequireComponent(typeof(charStats))]
@@ -17,6 +18,7 @@ public class ZombieAI : MonoBehaviour
     [Header("State & Targeting")]
     [SerializeField] private ZombieState currentState = ZombieState.Chase;
     [SerializeField] private Transform targetPlayer;
+    bool walking = false;
 
     [Header("External Stats")]
     [SerializeField] private float soloSpeedCap = 18f;
@@ -47,12 +49,13 @@ public class ZombieAI : MonoBehaviour
     int currentSwarmSize;
 
     public ZombieState CurrentState => currentState;
-
+    ZombieAnimator ZA;
     void Awake()
     {
         stats = GetComponent<charStats>();
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         rb2d = GetComponent<Rigidbody2D>();
+        ZA = GetComponent<ZombieAnimator>();
     }
 
     void Start()
@@ -69,6 +72,22 @@ public class ZombieAI : MonoBehaviour
         {
             FindPlayerTarget();
             if (targetPlayer == null) return;
+        }
+
+        if (ZA != null)
+        {
+            if (currentState == ZombieState.Chase)
+            {
+                if (walking == false)
+                {
+                    ZA.PlayAnimation("Walking");
+                    walking = true;
+                }
+            }
+            else if (currentState == ZombieState.WindupAttack)
+            {
+            //    ZA.PlayAnimation("Attack");
+            }
         }
 
         switch (currentState)
@@ -140,6 +159,17 @@ public class ZombieAI : MonoBehaviour
             }
             return;
         }
+
+        // Get the direction vector from current position to target
+        Vector2 directionl = (Vector2)targetPlayer.position - (Vector2)transform.position;
+
+        // Calculate the angle in degrees
+        float angle = Mathf.Atan2(directionl.y, directionl.x) * Mathf.Rad2Deg;
+
+        // Apply rotation around the Z-axis (adjust angle offset if your sprite points UP instead of RIGHT)
+        transform.rotation = Quaternion.AngleAxis(angle + 90, Vector3.forward);
+
+
         Collider2D[] zombies = Physics2D.OverlapCircleAll(
             transform.position,
             swarmRadius,

@@ -26,14 +26,30 @@ public class ExplosiveBarrel : MonoBehaviour
         Vector2 DefaultSize = transform.localScale;
         Vector2 HeightSize = transform.localScale*2;
         Vector2 startPos = transform.position;
-        float duration = Vector2.Distance(transform.position, landingPos) / 10f; // Adjust the divisor for desired fling speed
+        float duration = Vector2.Distance(transform.position, landingPos) / 12.5f; // Adjust the divisor for desired fling speed
         float elapsedTime = 0f;
         GameObject aC = Instantiate(circ, landingPos, Quaternion.identity);
+        aC.transform.localScale = new Vector2(10, 10);
         SpriteRenderer acSR = aC.GetComponent<SpriteRenderer>();
         while (elapsedTime < duration)
         {
             transform.Rotate(Vector3.forward, 360 * Time.deltaTime); // Rotate the barrel
-            transform.localScale = elapsedTime < (duration/2) ? Vector2.Lerp(transform.localScale, HeightSize, Time.deltaTime) : Vector2.Lerp(transform.localScale, DefaultSize, Time.deltaTime);
+            if (elapsedTime < duration / 2)
+            {
+                transform.localScale = Vector2.Lerp(
+                    DefaultSize,
+                    HeightSize,
+                    elapsedTime / (duration / 2)
+                );
+            }
+            else
+            {
+                transform.localScale = Vector2.Lerp(
+                    HeightSize,
+                    DefaultSize,
+                    (elapsedTime - duration / 2) / (duration / 2)
+                );
+            }
             acSR.color = new Color(acSR.color.r, acSR.color.g, acSR.color.b, Mathf.Lerp(0f, 0.5f, elapsedTime / duration));
             transform.position = Vector2.Lerp(startPos, landingPos, elapsedTime / duration);
             elapsedTime += Time.deltaTime;
@@ -42,6 +58,7 @@ public class ExplosiveBarrel : MonoBehaviour
         Destroy(aC);
         GetComponent<SpriteRenderer>().enabled = false; // Hide the barrel sprite>
         efx.Play();
+        AudioManager.Instance.PlaySFX("explosion");
         if (Vector2.Distance(stats.transform.position, landingPos) < circ.transform.localScale.y/2)
         {
             stats.TakeDamage(20); // Adjust damage value as needed

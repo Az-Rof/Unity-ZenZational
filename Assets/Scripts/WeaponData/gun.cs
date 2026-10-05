@@ -215,7 +215,7 @@ public class gun : MonoBehaviour
                 float randomOffset = UnityEngine.Random.Range(-spreadAngle * 0.5f, spreadAngle * 0.5f);
                 shotDir = RotateVector(aimDirection, randomOffset);
             }
-
+            AudioManager.Instance.PlaySFX("shoot");
             GameObject bullet = Instantiate(playerProjectilePrefab, spawnPos, Quaternion.identity);
             if (!bullet.TryGetComponent<projectile>(out var proj))
             {
