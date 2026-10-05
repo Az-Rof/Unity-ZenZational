@@ -56,10 +56,32 @@ public class Boss1AI : MonoBehaviour
     ZombieAnimator ZA;
 
     bool walking = false;
+    private bool landingShockwavesEnabled = true;
     float horizontal = 0f;
     float vertical = 0f;
 
     public Boss1State CurrentState => currentState;
+
+    public void EnableLandingShockwaves(bool enabled)
+    {
+        landingShockwavesEnabled = enabled;
+    }
+
+    /// <summary>Starts the landing jump immediately for the final-boss reveal opening.</summary>
+    public void TriggerOpeningAttack()
+    {
+        if (stats == null || stats.IsDead || targetPlayer == null)
+            FindPlayerTarget();
+        if (stats == null || stats.IsDead || targetPlayer == null)
+        {
+            Debug.LogWarning($"[{gameObject.name}] Cannot trigger opening attack because Boss1AI or player target is unavailable.", this);
+            return;
+        }
+
+        StopAllCoroutines();
+        currentState = Boss1State.OffScreen;
+        StartCoroutine(PerformOffscreenJump());
+    }
 
     void Awake()
     {
@@ -372,7 +394,8 @@ public class Boss1AI : MonoBehaviour
         if (attackSounds != null && attackSounds.Length > 2)
             AudioManager.Instance?.PlaySFX(attackSounds[2]);
 
-        SpawnLandingShockwaves(landingPosition);
+        if (landingShockwavesEnabled)
+            SpawnLandingShockwaves(landingPosition);
 
         float landingHitRadius = landingTelegraph != null ? landingTelegraph.transform.localScale.y / 2f : 7.5f;
         float distance = targetPlayer != null

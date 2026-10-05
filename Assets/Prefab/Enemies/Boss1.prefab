@@ -5007,7 +5007,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::charStats
   CharacterName: 
   CharacterType: 
-  currentHealth: 20000
+  currentHealth: 100
   maxHealth: 20000
   attackPower: 30
   attackRange: 1.5

@@ -1,12 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
-/// <summary>
-/// Simplified WaveManager: only spawns zombies around the player.
-/// No buffs, glitches, bosses, or progression states yet — those will be added
-/// once BuffSystem / GameHUD / ItemPickup have been designed.
-/// </summary>
+/// <summary>Runs the finite story sequence: Wave 1, Wave 2, Boss 1, Wave 3, final boss.</summary>
 public class WaveManager : MonoBehaviour
 {
     public static WaveManager Instance { get; private set; }
@@ -14,238 +11,458 @@ public class WaveManager : MonoBehaviour
     [Header("Spawn Configuration")]
     [SerializeField] private GameObject zombiePrefab;
     [SerializeField] private GameObject boss1Prefab;
+    [SerializeField] private GameObject finalBossPrefab;
+    [SerializeField] private GameObject finalBossDecoyPrefab;
+    [SerializeField] private GameObject finalBossExplosionPrefab;
+    [SerializeField] private Sprite finalBossRevealFace;
+    
     [SerializeField] private waveEvents[] events;
-    [SerializeField] int StartingWaveSize;
-    [Tooltip("Amount to increase wave size by")]
-    [SerializeField] int WaveTide;
-    [Tooltip("Time interval between zombie spawns (seconds)")]
-    [SerializeField] private float spawnInterval = 2f;
-    [Tooltip("Maximum number of zombies alive at the same time")]
-    [SerializeField] private int maxConcurrentZombies = 8;
-    [Tooltip("Minimum spawn radius from the player position (units)")]
-    [SerializeField] private float spawnRadiusMin = 10f;
-    [Tooltip("Maximum spawn radius from the player position (units)")]
-    [SerializeField] private float spawnRadiusMax = 15f;
-    [Tooltip("Boss spawns beyond its off-screen jump trigger radius; keep this above Boss1AI.screenRadius")]
-    [SerializeField] private float bossSpawnRadius = 35f;
-    [Tooltip("Initial delay before the first spawn (seconds)")]
-    [SerializeField] private float startDelay = 1f;
+    [SerializeField, Min(0)] private int startingWaveSize = 10;
+    [SerializeField, Min(0)] private int waveTide = 5;
+    [SerializeField, Min(0.01f)] private float spawnInterval = 0.5f;
+    [SerializeField, Min(1)] private int maxConcurrentZombies = 50;
+    [SerializeField, Min(0f)] private float spawnRadiusMin = 10f;
+    [SerializeField, Min(0f)] private float spawnRadiusMax = 15f;
+    [Tooltip("Keep greater than Boss1AI's off-screen jump radius.")]
+    [SerializeField, Min(1f)] private float bossSpawnRadius = 35f;
+    [SerializeField, Min(0f)] private float startDelay = 1f;
 
-    [Header("Stat Override (optional)")]
-    [Tooltip("If true, the zombie prefab stats will be overridden with the values below")]
-    [SerializeField] private bool overrideZombieStats = false;
-    [SerializeField] private float zombieHealth = 40f;
-    [SerializeField] private float zombieSpeed = 3f;
-    public int wC = 0;
+    [Header("Zombie Stat Override")]
+    [SerializeField] private bool overrideZombieStats;
+    [SerializeField, Min(1f)] private float zombieHealth = 40f;
+    [SerializeField, Min(0f)] private float zombieSpeed = 3f;
+    [SerializeField, Min(1f)] private float finalEncounterZombieSpeedMultiplier = 1.5f;
 
-    [Header("State")]
-    [Tooltip("Uncheck to stop spawning via the Inspector during play")]
+    [Header("Story Progression")]
+    [SerializeField, Min(1)] private int finalZombieWave = 3;
+    [SerializeField] private bool waitForBoss1Defeat = true;
+    [SerializeField] private GlitchingManager glitchingManager;
+    [SerializeField, Range(0, 100)] private int wave2GlitchPercent = 12;
+    [SerializeField, Min(0f)] private float wave2GlitchDuration = 2f;
+    [SerializeField, Min(0f)] private float wave2FakePowerOffDuration = 1.25f;
+    [SerializeField, Range(0, 100)] private int wave3GlitchPercent = 35;
+    [SerializeField, Min(0f)] private float wave3GlitchDuration = 3f;
+
+    [SerializeField, Min(0f)] private float finalRevealBlackDuration = 2f;
+    [SerializeField, Min(0.01f)] private float finalFaceLungeDuration = 0.12f;
+    [SerializeField, Min(0f)] private float finalFaceStareDuration = 1f;
+    [SerializeField, Min(0.01f)] private float finalFaceScale = 1.5f;
+    [SerializeField, Min(0f)] private float finalDecoyRevealDelay = 3f;
+    [SerializeField, Min(1f)] private float finalBossPlaceholderHealth = 2500f;
+    [SerializeField, Min(0f)] private float finalBossPlaceholderSpeed = 6f;
+    [SerializeField, Min(0f)] private float finalBossPlaceholderDamage = 35f;
+    [SerializeField, Min(1f)] private float decoyBossHealth = 300f;
+    [SerializeField] private bool allowFinalBossPlaceholder = true;
+
+    [Header("Runtime State (read only)")]
+    [SerializeField] public int wC;
     [SerializeField] private bool spawnEnabled = true;
+    [SerializeField] private int currentWave = 1;
 
     private Transform playerTransform;
-    private readonly List<GameObject> activeZombies = new List<GameObject>();
-    private Coroutine spawnLoop;
+    private readonly List<GameObject> activeEnemies = new List<GameObject>();
+    private Coroutine progressionRoutine;
     private int lastReportedCount = -1;
+    private bool boss1WasSpawned;
 
-    /// <summary> Event for future HUD integration (alive zombie count) </summary>
     public event System.Action<int> OnZombieCountChanged;
+    public event System.Action<int> OnWaveStarted;
+    public int ActiveZombieCount => activeEnemies.Count;
+    public int CurrentWave => currentWave;
 
-    /// <summary> Number of zombies currently alive </summary>
-    public int ActiveZombieCount => activeZombies.Count;
-
-    void Awake()
+    private void Awake()
     {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
     }
 
-    void Start()
+    private void Start()
     {
         FindPlayer();
-        AudioManager.Instance.PlayMusic("WaveMusic");
-        spawnLoop = StartCoroutine(SpawnLoopRoutine());
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayMusic("WaveMusic");
+
+        if (glitchingManager == null)
+            glitchingManager = FindAnyObjectByType<GlitchingManager>();
+        progressionRoutine = StartCoroutine(StoryProgressionRoutine());
     }
 
-    void Update()
+    private void OnDestroy()
     {
-        // Purge destroyed/dead zombie references from the list
-        activeZombies.RemoveAll(item => item == null);
-
-        if (activeZombies.Count != lastReportedCount)
-        {
-            lastReportedCount = activeZombies.Count;
-            OnZombieCountChanged?.Invoke(activeZombies.Count);
-        }
+        if (Instance == this) Instance = null;
     }
 
-    private void FindPlayer()
+    private void Update()
     {
-        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-        if (playerObj == null)
+        activeEnemies.RemoveAll(item => item == null);
+        if (activeEnemies.Count != lastReportedCount)
         {
-            playerController pc = FindAnyObjectByType<playerController>();
-            if (pc != null) playerObj = pc.gameObject;
-        }
-
-        if (playerObj != null)
-        {
-            playerTransform = playerObj.transform;
+            lastReportedCount = activeEnemies.Count;
+            OnZombieCountChanged?.Invoke(activeEnemies.Count);
         }
     }
 
-    private IEnumerator SpawnLoopRoutine()
+    private IEnumerator StoryProgressionRoutine()
+    {
+        yield return new WaitForSeconds(startDelay);
+
+        for (currentWave = 1; currentWave <= finalZombieWave; currentWave++)
+        {
+            wC = currentWave - 1;
+            if (currentWave == 2)
+            {
+                if (glitchingManager != null)
+                {
+                    glitchingManager.PlayWaveGlitch(wave2GlitchPercent, wave2GlitchDuration);
+                    glitchingManager.SetWaveGlitch(wave2GlitchPercent);
+                }
+            }
+            else if (currentWave >= 3)
+            {
+                if (glitchingManager != null)
+                {
+                    glitchingManager.PlayWaveGlitch(wave3GlitchPercent, wave3GlitchDuration);
+                    glitchingManager.SetWaveGlitch(wave3GlitchPercent);
+                }
+            }
+
+            yield return RunZombieWave(currentWave);
+            yield return WaitUntilEnemiesDefeated();
+
+            // Reward after each zombie wave; BuffSelectionUI pauses gameplay until a choice is made.
+            BuffSystem.Instance?.TriggerBuffSelection();
+            yield return WaitForBuffChoice();
+
+            if (currentWave == 2 && HasWaveEvent(2, "SpawnBoss1"))
+            {
+                if (glitchingManager != null)
+                    yield return glitchingManager.PlayFakePowerOff(wave2FakePowerOffDuration);
+
+                // BuffSystem.Instance?.TriggerBuffSelection();
+                // yield return WaitForBuffChoice();
+
+                yield return SpawnBoss1AndWait();
+                if (glitchingManager != null) glitchingManager.ClearWaveGlitch();
+            }
+        }
+
+        spawnEnabled = false;
+        currentWave = finalZombieWave + 1;
+        yield return StartFinalBoss();
+        progressionRoutine = null;
+    }
+
+    private IEnumerator RunZombieWave(int waveNumber)
+    {
+        OnWaveStarted?.Invoke(waveNumber);
+        int waveSize = Mathf.Max(0, startingWaveSize + waveTide * (waveNumber - 1));
+        int spawned = 0;
+
+        while (spawned < waveSize)
+        {
+            if (!IsPlayerAlive()) yield break;
+            activeEnemies.RemoveAll(item => item == null);
+            if (spawnEnabled && activeEnemies.Count < maxConcurrentZombies)
+            {
+                SpawnZombie();
+                spawned++;
+            }
+            yield return new WaitForSeconds(spawnInterval);
+        }
+    }
+
+    private IEnumerator WaitUntilEnemiesDefeated()
     {
         while (true)
         {
-            if (TryGetWaveEvent(wC, "SpawnBoss1"))
-            {
-                yield return new WaitForSeconds(startDelay);
-                SpawnBoss1();
-
-                while (activeZombies.Count > 0)
-                    yield return new WaitForSeconds(0.1f);
-
-                yield return new WaitForSeconds(startDelay);
-                BuffSystem.Instance?.TriggerBuffSelection();
-                wC++;
-                continue;
-            }
-
-            int spawnedZombies = 0;
-            int waveSize = StartingWaveSize + (WaveTide * wC);
-            yield return new WaitForSeconds(startDelay);
-
-            while (spawnedZombies < waveSize)
-            {
-                if (spawnEnabled && activeZombies.Count < maxConcurrentZombies)
-                {
-                    SpawnZombie();
-                    spawnedZombies++;
-                }
-
-                yield return new WaitForSeconds(spawnInterval);
-            }
+            if (!IsPlayerAlive()) yield break;
+            PruneDefeatedEnemies();
+            if (activeEnemies.Count == 0) yield break;
             yield return new WaitForSeconds(0.1f);
-            while (activeZombies.Count > 0)
-            {
-                yield return new WaitForSeconds(0.1f);
-            }
-            yield return new WaitForSeconds(startDelay);
-            BuffSystem.Instance?.TriggerBuffSelection();
-            wC++;
         }
     }
 
-    private bool TryGetWaveEvent(int waveNumber, string eventName)
+    private IEnumerator WaitForBuffChoice()
+    {
+        // Avoid advancing before a present BuffSelectionUI has completed its selection.
+        while (BuffSelectionUI.IsOpen)
+            yield return null;
+    }
+
+    private IEnumerator SpawnBoss1AndWait()
+    {
+        if (boss1WasSpawned) yield break;
+        boss1WasSpawned = true;
+        SpawnBoss1();
+
+        if (!waitForBoss1Defeat) yield break;
+        while (true)
+        {
+            if (!IsPlayerAlive()) yield break;
+            PruneDefeatedEnemies();
+            if (activeEnemies.Count == 0) yield break;
+            yield return new WaitForSeconds(0.1f);
+        }
+    }
+
+    private IEnumerator StartFinalBoss()
+    {
+        if (!HasWaveEvent(finalZombieWave, "SpawnFinalBoss")) yield break;
+
+        GameObject decoyPrefab = finalBossDecoyPrefab != null ? finalBossDecoyPrefab : zombiePrefab;
+        GameObject decoy = null;
+        if (decoyPrefab != null)
+        {
+            decoy = Instantiate(decoyPrefab, RandomSpawnPosition(8f, 10f), Quaternion.identity);
+            decoy.name = "Final Reveal Decoy (Zombie)";
+            if (decoy.TryGetComponent(out charStats decoyStats))
+            {
+                decoyStats.speed = Mathf.Max(decoyStats.speed, 3f);
+                decoyStats.maxHealth = decoyBossHealth;
+                decoyStats.currentHealth = decoyBossHealth;
+            }
+            else
+            {
+                Debug.LogWarning("[WaveManager] The final reveal decoy prefab needs charStats to be tracked and defeated.", decoy);
+            }
+            RegisterEnemy(decoy);
+        }
+
+        // Give the player a short moment to notice/defeat the ordinary zombie decoy.
+        yield return new WaitForSeconds(Mathf.Max(0f, finalDecoyRevealDelay));
+
+        if (decoy != null)
+        {
+            if (finalBossExplosionPrefab != null)
+                Instantiate(finalBossExplosionPrefab, decoy.transform.position, Quaternion.identity);
+            activeEnemies.Remove(decoy);
+            Destroy(decoy);
+        }
+
+        GameObject resolvedFinalBossPrefab = finalBossPrefab != null ? finalBossPrefab : boss1Prefab;
+        Sprite faceSprite = finalBossRevealFace;
+        if (faceSprite == null && resolvedFinalBossPrefab != null)
+        {
+            SpriteRenderer faceRenderer = resolvedFinalBossPrefab.GetComponentInChildren<SpriteRenderer>();
+            if (faceRenderer != null && faceRenderer.sprite != null) faceSprite = faceRenderer.sprite;
+        }
+
+        GameObject finalBoss = null;
+        Boss1AI finalBossAI = null;
+        if (glitchingManager != null)
+        {
+            glitchingManager.PlayRevealGlitch(wave3GlitchPercent, 0.35f);
+            yield return new WaitForSecondsRealtime(0.35f);
+            yield return glitchingManager.PlayFaceReveal(
+                faceSprite,
+                finalRevealBlackDuration,
+                finalFaceLungeDuration,
+                finalFaceStareDuration,
+                finalFaceScale,
+                () => finalBoss = SpawnFinalBoss(resolvedFinalBossPrefab, false),
+                () =>
+                {
+                    finalBossAI = finalBoss != null ? finalBoss.GetComponent<Boss1AI>() : null;
+                    finalBossAI?.TriggerOpeningAttack();
+                    if (finalBoss != null && finalBossPrefab == null)
+                        finalBoss.name = "Final Boss (Boss 1 Prefab)";
+                });
+        }
+        else
+        {
+            Debug.LogWarning("[WaveManager] GlitchingManager is not assigned; skipping the cinematic blackout and face reveal.", this);
+        }
+
+        if (finalBoss == null && resolvedFinalBossPrefab != null)
+        {
+            finalBoss = SpawnFinalBoss(resolvedFinalBossPrefab, true);
+        }
+        else if (finalBoss == null && allowFinalBossPlaceholder)
+        {
+            finalBoss = CreateFinalBossPlaceholder(RandomSpawnPosition(4f, 6f));
+            Debug.LogWarning("[WaveManager] Neither finalBossPrefab nor boss1Prefab is assigned. A temporary generic placeholder was spawned.", this);
+        }
+        else if (finalBoss == null)
+        {
+            Debug.LogWarning("[WaveManager] Assign finalBossPrefab or boss1Prefab to start the final boss encounter.", this);
+        }
+
+        RegisterEnemy(finalBoss);
+    }
+
+    private GameObject SpawnFinalBoss(GameObject bossPrefab, bool triggerOpeningAttack)
+    {
+        if (bossPrefab == null) return null;
+
+        Vector3 spawnPosition = RandomSpawnPosition(4f, 6f);
+        if (playerTransform != null)
+            spawnPosition = playerTransform.position + Vector3.right * 30f;
+
+        GameObject boss = Instantiate(bossPrefab, spawnPosition, Quaternion.identity);
+        boss.name = "Final Boss (Boss 1 Prefab)";
+        if (boss.TryGetComponent(out charStats bossStats))
+        {
+            bossStats.currentHealth = bossStats.maxHealth;
+            bossStats.speed = Mathf.Max(bossStats.speed, finalBossPlaceholderSpeed);
+        }
+
+        Boss1AI bossAI = boss.GetComponent<Boss1AI>();
+        if (bossAI != null)
+        {
+            bossAI.EnableLandingShockwaves(true);
+            if (triggerOpeningAttack)
+                bossAI.TriggerOpeningAttack();
+        }
+        else
+        {
+            Debug.LogWarning("[WaveManager] Boss 1 prefab has no Boss1AI; cannot trigger its opening jump attack.", boss);
+        }
+
+        return boss;
+    }
+
+    private GameObject CreateFinalBossPlaceholder(Vector3 position)
+    {
+        GameObject boss = new GameObject("FINAL BOSS PLACEHOLDER - UNUSED CHARACTER NOT ASSIGNED") { tag = "Enemy" };
+        boss.transform.position = position;
+
+        SpriteRenderer renderer = boss.AddComponent<SpriteRenderer>();
+        SpriteRenderer sourceRenderer = zombiePrefab != null
+            ? zombiePrefab.GetComponentInChildren<SpriteRenderer>()
+            : boss1Prefab != null ? boss1Prefab.GetComponentInChildren<SpriteRenderer>() : null;
+        if (sourceRenderer != null) renderer.sprite = sourceRenderer.sprite;
+        renderer.color = new Color(0.25f, 0.02f, 0.08f, 1f);
+        renderer.sortingOrder = 10;
+        boss.transform.localScale = Vector3.one * 2f;
+
+        CircleCollider2D collider = boss.AddComponent<CircleCollider2D>();
+        collider.radius = 0.8f;
+        Rigidbody2D body = boss.AddComponent<Rigidbody2D>();
+        body.gravityScale = 0f;
+        body.freezeRotation = true;
+
+        charStats stats = boss.AddComponent<charStats>();
+        stats.CharacterName = "Final Boss Placeholder";
+        stats.maxHealth = finalBossPlaceholderHealth;
+        stats.currentHealth = finalBossPlaceholderHealth;
+        stats.speed = finalBossPlaceholderSpeed;
+        stats.attackPower = finalBossPlaceholderDamage;
+        stats.attackRange = 1.5f;
+        boss.AddComponent<ZombieAI>();
+        return boss;
+    }
+
+    private bool HasWaveEvent(int waveNumber, string eventName)
     {
         if (events == null) return false;
-
         foreach (waveEvents waveEvent in events)
         {
             if (waveEvent != null && waveEvent.waveNumber == waveNumber && waveEvent.eventName == eventName)
                 return true;
         }
-
         return false;
+    }
+
+    private void FindPlayer()
+    {
+        GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
+        if (playerObject == null)
+        {
+            playerController player = FindAnyObjectByType<playerController>();
+            if (player != null) playerObject = player.gameObject;
+        }
+        if (playerObject != null) playerTransform = playerObject.transform;
+    }
+
+    private Vector3 RandomSpawnPosition(float minimum, float maximum)
+    {
+        if (playerTransform == null) FindPlayer();
+        if (playerTransform == null && minimum > 0f)
+        {
+            Debug.LogWarning("[WaveManager] Cannot spawn enemies because no Player was found.", this);
+            return transform.position;
+        }
+        if (playerTransform == null) return transform.position;
+        float angle = Random.Range(0f, Mathf.PI * 2f);
+        float distance = Random.Range(minimum, Mathf.Max(minimum, maximum));
+        return playerTransform.position + new Vector3(Mathf.Cos(angle) * distance, Mathf.Sin(angle) * distance, 0f);
     }
 
     private void SpawnZombie()
     {
-        if (playerTransform == null)
-        {
-            FindPlayer();
-            if (playerTransform == null) return; // Player is not in the scene yet
-        }
-
-        Vector3 spawnPos = GetRandomSpawnPositionAroundPlayer();
-
         GameObject zombie;
         if (zombiePrefab != null)
         {
-            zombie = Instantiate(zombiePrefab, spawnPos, Quaternion.identity);
+            zombie = Instantiate(zombiePrefab, RandomSpawnPosition(spawnRadiusMin, spawnRadiusMax), Quaternion.identity);
             ApplyStatOverrides(zombie);
+            if (currentWave > finalZombieWave && zombie.TryGetComponent(out charStats stats))
+                stats.speed *= finalEncounterZombieSpeedMultiplier;
         }
         else
         {
-            // Fallback: create a runtime zombie if no prefab is assigned in the Inspector
-            zombie = CreateRuntimeZombie(spawnPos);
+            zombie = CreateRuntimeZombie(RandomSpawnPosition(spawnRadiusMin, spawnRadiusMax));
         }
-
-        if (zombie != null)
-        {
-            activeZombies.Add(zombie);
-            lastReportedCount = -1; // force refresh of the count event
-        }
+        RegisterEnemy(zombie);
     }
 
     private void SpawnBoss1()
     {
-        if (playerTransform == null)
+        if (boss1Prefab == null)
         {
-            FindPlayer();
-            if (playerTransform == null) return; // Player is not in the scene yet
+            Debug.LogError("[WaveManager] SpawnBoss1 event is configured, but boss1Prefab is not assigned.", this);
+            return;
         }
-
-        GameObject zombie;
-        if (boss1Prefab != null)
-        {
-            float angle = Random.Range(0f, Mathf.PI * 2f);
-            Vector3 direction = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f);
-            Vector3 spawnPos = playerTransform.position + direction * bossSpawnRadius;
-            zombie = Instantiate(boss1Prefab, spawnPos, Quaternion.identity);
-        }
-        else
-        {
-            // Fallback: create a runtime zombie if no prefab is assigned in the Inspector
-            zombie = CreateRuntimeZombie(GetRandomSpawnPositionAroundPlayer());
-        }
-
-        if (zombie != null)
-        {
-            activeZombies.Add(zombie);
-            lastReportedCount = -1; // force refresh of the count event
-        }
+        GameObject boss = Instantiate(boss1Prefab, RandomSpawnPosition(bossSpawnRadius, bossSpawnRadius), Quaternion.identity);
+        RegisterEnemy(boss);
     }
 
-
-    /// <summary> Random position on a ring (donut) around the player </summary>
-    private Vector3 GetRandomSpawnPositionAroundPlayer()
+    private void RegisterEnemy(GameObject enemy)
     {
-        float angle = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
-        float dist = UnityEngine.Random.Range(spawnRadiusMin, spawnRadiusMax);
-        return playerTransform.position + new Vector3(Mathf.Cos(angle) * dist, Mathf.Sin(angle) * dist, 0f);
+        if (enemy == null) return;
+        activeEnemies.Add(enemy);
+        lastReportedCount = -1;
+    }
+
+    private void PruneDefeatedEnemies()
+    {
+        activeEnemies.RemoveAll(enemy => enemy == null ||
+            !enemy.TryGetComponent<charStats>(out _) ||
+            enemy.TryGetComponent(out charStats stats) && stats.IsDead);
     }
 
     private void ApplyStatOverrides(GameObject zombie)
     {
-        if (!overrideZombieStats) return;
-
-        if (zombie.TryGetComponent<charStats>(out var stats))
-        {
-            stats.maxHealth = zombieHealth;
-            stats.currentHealth = zombieHealth;
-            stats.speed = zombieSpeed;
-        }
+        if (!overrideZombieStats || zombie == null) return;
+        if (!zombie.TryGetComponent<charStats>(out charStats stats)) return;
+        stats.maxHealth = zombieHealth;
+        stats.currentHealth = zombieHealth;
+        stats.speed = zombieSpeed;
     }
 
     private GameObject CreateRuntimeZombie(Vector3 position)
     {
-        GameObject zombie = new GameObject("Zombie (Runtime)");
+        GameObject zombie = new GameObject("Zombie (Runtime)") { tag = "Enemy" };
         zombie.transform.position = position;
-        zombie.tag = "Enemy";
+        SpriteRenderer renderer = zombie.AddComponent<SpriteRenderer>();
+        renderer.color = new Color(0.8f, 0.2f, 0.2f, 1f);
+        renderer.sortingOrder = 2;
 
-        SpriteRenderer sr = zombie.AddComponent<SpriteRenderer>();
-        sr.color = new Color(0.8f, 0.2f, 0.2f, 1f); // deep red
-        sr.sortingOrder = 2;
-        sr.sprite = CreateDebugSprite();
+        Texture2D texture = new Texture2D(16, 16);
+        Color[] pixels = new Color[texture.width * texture.height];
+        for (int i = 0; i < pixels.Length; i++) pixels[i] = Color.white;
+        texture.SetPixels(pixels);
+        texture.Apply();
+        renderer.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f), 16f);
 
-        CircleCollider2D col = zombie.AddComponent<CircleCollider2D>();
-        col.radius = 0.5f;
-
-        Rigidbody2D rb = zombie.AddComponent<Rigidbody2D>();
-        rb.gravityScale = 0f;
-        rb.freezeRotation = true;
-        rb.linearDamping = 3f; // knockback momentum decays naturally
+        CircleCollider2D collider = zombie.AddComponent<CircleCollider2D>();
+        collider.radius = 0.5f;
+        Rigidbody2D body = zombie.AddComponent<Rigidbody2D>();
+        body.gravityScale = 0f;
+        body.freezeRotation = true;
 
         charStats stats = zombie.AddComponent<charStats>();
         stats.maxHealth = zombieHealth;
@@ -253,49 +470,43 @@ public class WaveManager : MonoBehaviour
         stats.attackPower = 12f;
         stats.attackRange = 1.3f;
         stats.speed = zombieSpeed;
-
         zombie.AddComponent<ZombieAI>();
-
         return zombie;
     }
 
-    private static Sprite CreateDebugSprite()
-    {
-        // 32x32 white square sprite used as the zombie's visual placeholder
-        Texture2D tex = new Texture2D(32, 32);
-        Color[] pixels = new Color[32 * 32];
-        for (int i = 0; i < pixels.Length; i++) pixels[i] = Color.white;
-        tex.SetPixels(pixels);
-        tex.Apply();
-        return Sprite.Create(tex, new Rect(0f, 0f, 32f, 32f), new Vector2(0.5f, 0.5f), 32f);
-    }
-
-    /// <summary> Stop the spawner (call this on game over, etc.) </summary>
     public void StopSpawning()
     {
         spawnEnabled = false;
-        if (spawnLoop != null) StopCoroutine(spawnLoop);
-        spawnLoop = null;
+        if (progressionRoutine != null)
+        {
+            StopCoroutine(progressionRoutine);
+            progressionRoutine = null;
+        }
     }
 
-    /// <summary> Resume the spawner </summary>
+    private bool IsPlayerAlive()
+    {
+        return FindAnyObjectByType<playerController>() != null &&
+               FindAnyObjectByType<Titlescreen>() != null &&
+               SceneManager.GetActiveScene().buildIndex != 0;
+    }
+
     public void ResumeSpawning()
     {
-        if (spawnLoop == null)
+        if (progressionRoutine == null)
         {
             spawnEnabled = true;
-            spawnLoop = StartCoroutine(SpawnLoopRoutine());
+            progressionRoutine = StartCoroutine(StoryProgressionRoutine());
         }
     }
 
-    /// <summary> Destroy every zombie still alive </summary>
     public void ClearAllZombies()
     {
-        foreach (GameObject zombie in activeZombies)
+        foreach (GameObject enemy in activeEnemies)
         {
-            if (zombie != null) Destroy(zombie);
+            if (enemy != null) Destroy(enemy);
         }
-        activeZombies.Clear();
+        activeEnemies.Clear();
         lastReportedCount = -1;
     }
 }

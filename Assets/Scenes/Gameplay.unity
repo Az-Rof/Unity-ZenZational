@@ -795,7 +795,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1409485196}
-  m_Father: {fileID: 1964325728}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
@@ -1310,11 +1310,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 897555bfb049f43c0a341b72b6883d00, type: 3}
   m_Name: 
   m_EditorClassIdentifier: KinoGlitch.Runtime::KinoGlitch.AnalogGlitchController
-  <ScanLineJitter>k__BackingField: 0.098
-  <VerticalJump>k__BackingField: 0.29
-  <HorizontalShake>k__BackingField: 0.257
-  <ColorDrift>k__BackingField: 0.147
-  <HorizontalRipple>k__BackingField: 0.351
+  <ScanLineJitter>k__BackingField: 0
+  <VerticalJump>k__BackingField: 0
+  <HorizontalShake>k__BackingField: 0
+  <ColorDrift>k__BackingField: 0
+  <HorizontalRipple>k__BackingField: 0
   _shader: {fileID: 4800000, guid: 754922b6576fa498bbb2fbbebfe256ef, type: 3}
 --- !u!114 &519420036
 MonoBehaviour:
@@ -1330,9 +1330,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GlitchingManager
   analog: {fileID: 519420035}
   digital: {fileID: 519420034}
-  effectMode: 0
+  effectMode: 2
   intensityPercent: 30
   duration: 1
+  faceRevealScream: {fileID: 0}
   testKey: 21
 --- !u!1 &541851963
 GameObject:
@@ -4234,7 +4235,6 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 706928688}
-  - {fileID: 1964325728}
   m_Father: {fileID: 2030535510}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -4338,7 +4338,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1713040890}
-  m_Father: {fileID: 1964325728}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
@@ -4745,7 +4745,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1957460011}
-  - component: {fileID: 1957460010}
   - component: {fileID: 1957460012}
   m_Layer: 0
   m_Name: WaveManager
@@ -4753,19 +4752,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!114 &1957460010
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1957460009}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 81a3d9f0b1244038a8e104112e4fbc05, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WaveManager
+  m_IsActive: 1
 --- !u!4 &1957460011
 Transform:
   m_ObjectHideFlags: 0
@@ -4792,129 +4779,51 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7e8ccbb38aef03e47ba5dfe912750c20, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GameHUD
+  m_EditorClassIdentifier: Assembly-CSharp::WaveManager
   zombiePrefab: {fileID: 5935649346357155513, guid: cfb36152e19c3b34080c1d02a319161a, type: 3}
   boss1Prefab: {fileID: 5935649346357155513, guid: 352f3d08c58f30742bbc73b3f34b28b9, type: 3}
+  finalBossPrefab: {fileID: 5935649346357155513, guid: 352f3d08c58f30742bbc73b3f34b28b9, type: 3}
+  finalBossDecoyPrefab: {fileID: 5935649346357155513, guid: cfb36152e19c3b34080c1d02a319161a, type: 3}
+  finalBossExplosionPrefab: {fileID: 0}
+  finalBossRevealFace: {fileID: 0}
   events:
-  - waveNumber: 0
+  - waveNumber: 2
     eventName: SpawnBoss1
-  StartingWaveSize: 10
-  WaveTide: 5
+  - waveNumber: 3
+    eventName: SpawnFinalBoss
+  startingWaveSize: 10
+  waveTide: 5
   spawnInterval: 0.5
   maxConcurrentZombies: 50
-  spawnRadiusMin: 10
-  spawnRadiusMax: 15
+  spawnRadiusMin: 15
+  spawnRadiusMax: 25
   bossSpawnRadius: 35
   startDelay: 1
   overrideZombieStats: 0
   zombieHealth: 40
   zombieSpeed: 3
+  finalEncounterZombieSpeedMultiplier: 1.5
+  finalZombieWave: 3
+  waitForBoss1Defeat: 1
+  glitchingManager: {fileID: 519420036}
+  wave2GlitchPercent: 5
+  wave2GlitchDuration: 30
+  wave2FakePowerOffDuration: 1.25
+  wave3GlitchPercent: 10
+  wave3GlitchDuration: 3
+  finalRevealBlackDuration: 2
+  finalFaceLungeDuration: 0.12
+  finalFaceStareDuration: 1
+  finalFaceScale: 1.5
+  finalDecoyRevealDelay: 3
+  finalBossPlaceholderHealth: 2500
+  finalBossPlaceholderSpeed: 6
+  finalBossPlaceholderDamage: 35
+  decoyBossHealth: 300
+  allowFinalBossPlaceholder: 0
   wC: 0
   spawnEnabled: 1
---- !u!1 &1964325727
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1964325728}
-  - component: {fileID: 1964325731}
-  - component: {fileID: 1964325730}
-  - component: {fileID: 1964325732}
-  m_Layer: 5
-  m_Name: buttonsCard
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &1964325728
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1964325727}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 236070254}
-  - {fileID: 1734849932}
-  m_Father: {fileID: 1713499058}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 400, y: -690}
-  m_SizeDelta: {x: 800, y: 800}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1964325730
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1964325727}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
---- !u!222 &1964325731
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1964325727}
-  m_CullTransparentMesh: 1
---- !u!114 &1964325732
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1964325727}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.HorizontalLayoutGroup
-  m_Padding:
-    m_Left: 0
-    m_Right: 0
-    m_Top: 0
-    m_Bottom: 0
-  m_ChildAlignment: 1
-  m_Spacing: 0
-  m_ChildForceExpandWidth: 1
-  m_ChildForceExpandHeight: 1
-  m_ChildControlWidth: 0
-  m_ChildControlHeight: 0
-  m_ChildScaleWidth: 0
-  m_ChildScaleHeight: 0
-  m_ReverseArrangement: 0
+  currentWave: 1
 --- !u!1 &1970871376
 GameObject:
   m_ObjectHideFlags: 0
@@ -5705,3 +5614,5 @@ SceneRoots:
   - {fileID: 702677231}
   - {fileID: 6654405529646410139}
   - {fileID: 817157180}
+  - {fileID: 236070254}
+  - {fileID: 1734849932}
