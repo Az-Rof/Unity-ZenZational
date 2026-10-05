@@ -26,6 +26,8 @@ public class WaveManager : MonoBehaviour
     [SerializeField] private float spawnRadiusMin = 10f;
     [Tooltip("Maximum spawn radius from the player position (units)")]
     [SerializeField] private float spawnRadiusMax = 15f;
+    [Tooltip("Boss spawns beyond its off-screen jump trigger radius; keep this above Boss1AI.screenRadius")]
+    [SerializeField] private float bossSpawnRadius = 35f;
     [Tooltip("Initial delay before the first spawn (seconds)")]
     [SerializeField] private float startDelay = 1f;
 
@@ -93,58 +95,58 @@ public class WaveManager : MonoBehaviour
 
     private IEnumerator SpawnLoopRoutine()
     {
-        while (true) {
-
-            foreach (var waveEvent in events)
+        while (true)
+        {
+            if (TryGetWaveEvent(wC, "SpawnBoss1"))
             {
-                if (waveEvent.waveNumber == wC)
-                {
-                    if (waveEvent.eventName == "SpawnBoss1")
-                    {
-                        int Zmb2 = 0;
-                        int wS2 = StartingWaveSize + (WaveTide * wC);
-                        yield return new WaitForSeconds(startDelay);
+                yield return new WaitForSeconds(startDelay);
+                SpawnBoss1();
 
-                        SpawnBoss1();
-                        Zmb2++;
+                while (activeZombies.Count > 0)
+                    yield return new WaitForSeconds(0.1f);
 
-                        yield return new WaitForSeconds(0.1f);
-                        while (lastReportedCount > 0)
-                        {
-                            yield return new WaitForSeconds(0.1f);
-                        }
-                        yield return new WaitForSeconds(startDelay);
-                        BuffSystem.Instance.TriggerBuffSelection();
-                        Zmb2 = 0;
-                        wC++;
-                        break;
-                    }
-                }
+                yield return new WaitForSeconds(startDelay);
+                BuffSystem.Instance?.TriggerBuffSelection();
+                wC++;
+                continue;
             }
-            int Zmb = 0;
-            int wS = StartingWaveSize + (WaveTide * wC);
+
+            int spawnedZombies = 0;
+            int waveSize = StartingWaveSize + (WaveTide * wC);
             yield return new WaitForSeconds(startDelay);
 
-            while (Zmb < wS)
+            while (spawnedZombies < waveSize)
             {
                 if (spawnEnabled && activeZombies.Count < maxConcurrentZombies)
                 {
                     SpawnZombie();
-                    Zmb++;
+                    spawnedZombies++;
                 }
 
                 yield return new WaitForSeconds(spawnInterval);
             }
             yield return new WaitForSeconds(0.1f);
-            while (lastReportedCount > 0)
+            while (activeZombies.Count > 0)
             {
                 yield return new WaitForSeconds(0.1f);
             }
             yield return new WaitForSeconds(startDelay);
-            BuffSystem.Instance.TriggerBuffSelection();
-            Zmb = 0;
+            BuffSystem.Instance?.TriggerBuffSelection();
             wC++;
         }
+    }
+
+    private bool TryGetWaveEvent(int waveNumber, string eventName)
+    {
+        if (events == null) return false;
+
+        foreach (waveEvents waveEvent in events)
+        {
+            if (waveEvent != null && waveEvent.waveNumber == waveNumber && waveEvent.eventName == eventName)
+                return true;
+        }
+
+        return false;
     }
 
     private void SpawnZombie()
@@ -184,17 +186,18 @@ public class WaveManager : MonoBehaviour
             if (playerTransform == null) return; // Player is not in the scene yet
         }
 
-        Vector3 spawnPos = GetRandomSpawnPositionAroundPlayer();
-
         GameObject zombie;
         if (boss1Prefab != null)
         {
-            zombie = Instantiate(boss1Prefab, new Vector2(30,0), Quaternion.identity);
+            float angle = Random.Range(0f, Mathf.PI * 2f);
+            Vector3 direction = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f);
+            Vector3 spawnPos = playerTransform.position + direction * bossSpawnRadius;
+            zombie = Instantiate(boss1Prefab, spawnPos, Quaternion.identity);
         }
         else
         {
             // Fallback: create a runtime zombie if no prefab is assigned in the Inspector
-            zombie = CreateRuntimeZombie(spawnPos);
+            zombie = CreateRuntimeZombie(GetRandomSpawnPositionAroundPlayer());
         }
 
         if (zombie != null)

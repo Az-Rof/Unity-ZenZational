@@ -6,6 +6,7 @@ public class ExplosiveBarrel : MonoBehaviour
 {
 
     public Vector2 landingPos;
+    [HideInInspector] public float damage = 20f;
     [SerializeField] private ParticleSystem efx;
     [SerializeField] private GameObject circ;
     charStats stats;
@@ -61,7 +62,7 @@ public class ExplosiveBarrel : MonoBehaviour
         AudioManager.Instance.PlaySFX("explosion");
         if (Vector2.Distance(stats.transform.position, landingPos) < circ.transform.localScale.y/2)
         {
-            stats.TakeDamage(20); // Adjust damage value as needed
+            stats.TakeDamage(damage);
         }
         Destroy(gameObject, efx.main.duration); // Destroy the barrel after the particle effect duration)
     }

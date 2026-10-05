@@ -272,6 +272,15 @@
         "com.unity.modules.physics": "1.0.0"
       }
     },
+    "com.unity.visualeffectgraph": {
+      "version": "17.5.0",
+      "depth": 1,
+      "source": "builtin",
+      "dependencies": {
+        "com.unity.shadergraph": "17.5.0",
+        "com.unity.render-pipelines.core": "17.5.0"
+      }
+    },
     "com.unity.visualscripting": {
       "version": "1.9.11",
       "depth": 0,
@@ -281,6 +290,32 @@
         "com.unity.modules.jsonserialize": "1.0.0"
       },
       "url": "https://packages.unity.com"
+    },
+    "jp.keijiro.abcvfx": {
+      "version": "0.0.4",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.visualeffectgraph": "7.4.1"
+      },
+      "url": "https://registry.npmjs.com"
+    },
+    "jp.keijiro.kino-glitch.universal": {
+      "version": "1.0.0",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.render-pipelines.universal": "17.0.0",
+        "jp.keijiro.noiseshader": "3.0.1"
+      },
+      "url": "https://registry.npmjs.com"
+    },
+    "jp.keijiro.noiseshader": {
+      "version": "3.0.1",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://registry.npmjs.com"
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",

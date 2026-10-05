@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Drawing;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -28,6 +29,7 @@ public class Boss1AI : MonoBehaviour
     [SerializeField] private float screenRadius = 10f;
     [SerializeField] private float jumpEndlagDuration = 1.5f;
     [SerializeField] private ParticleSystem shockwave;
+    [SerializeField, Min(1)] private int landingShockwaveProjectileCount = 8;
 
    [Header("Attack Settings")]
     [SerializeField] private float attackWindupDuration = 0.3f;
@@ -314,12 +316,23 @@ public class Boss1AI : MonoBehaviour
 
     private IEnumerator PerformOffscreenJump()
     {
-                rb2d.linearVelocity = Vector2.zero;
+        if (rb2d != null) rb2d.linearVelocity = Vector2.zero;
         currentState = Boss1State.WindupAttack;
-        GameObject aC = Instantiate(attackCirc, targetPlayer.position + new Vector3(horizontal * cachedPlayerStats.speed, vertical * cachedPlayerStats.speed, 0), Quaternion.identity);
-        aC.transform.localScale = new Vector2(15,15);
-        SpriteRenderer acSR = aC.GetComponent<SpriteRenderer>();
-        float duration = Vector2.Distance(transform.position, aC.transform.position) / 15f;
+        Vector2 landingPosition = targetPlayer.position;
+        if (cachedPlayerStats != null)
+        {
+            landingPosition += new Vector2(horizontal * cachedPlayerStats.speed, vertical * cachedPlayerStats.speed);
+        }
+
+        GameObject landingTelegraph = attackCirc != null
+            ? Instantiate(attackCirc, landingPosition, Quaternion.identity)
+            : null;
+        if (landingTelegraph != null) landingTelegraph.transform.localScale = new Vector2(15f, 15f);
+        SpriteRenderer telegraphRenderer = landingTelegraph != null
+            ? landingTelegraph.GetComponent<SpriteRenderer>()
+            : null;
+
+        float duration = Vector2.Distance(transform.position, landingPosition) / 15f;
         float elapsedTime = 0f;
         Vector2 DefaultSize = transform.localScale;
         Vector2 HeightSize = transform.localScale * 2;
@@ -342,21 +355,32 @@ public class Boss1AI : MonoBehaviour
                     (elapsedTime - duration / 2) / (duration / 2)
                 );
             }
-            acSR.color = new UnityEngine.Color(acSR.color.r, acSR.color.g, acSR.color.b, Mathf.Lerp(0f, 0.5f, elapsedTime / duration));
-            transform.position = Vector2.Lerp(startPos, aC.transform.position, elapsedTime / duration);
+            if (telegraphRenderer != null)
+            {
+                UnityEngine.Color color = telegraphRenderer.color;
+                color.a = Mathf.Lerp(0f, 0.5f, elapsedTime / duration);
+                telegraphRenderer.color = color;
+            }
+            transform.position = Vector2.Lerp(startPos, landingPosition, elapsedTime / duration);
             elapsedTime += Time.deltaTime;
             yield return null;
         }
-        Destroy(aC);
-        shockwave.Play();
-        AudioManager.Instance.PlaySFX(attackSounds[2]);
-        GameObject shock = Instantiate(shockwavePrefab, transform.position, Quaternion.identity);
-        shock.transform.rotation = transform.rotation * Quaternion.Euler(0, 0, -90f);
-        Destroy(shock, 15f);
-        float distance = Vector2.Distance(transform.position, targetPlayer.position);
-        if (distance < aC.transform.localScale.y/2)
+        transform.position = landingPosition;
+        if (landingTelegraph != null) Destroy(landingTelegraph);
+
+        if (shockwave != null) shockwave.Play();
+        if (attackSounds != null && attackSounds.Length > 2)
+            AudioManager.Instance?.PlaySFX(attackSounds[2]);
+
+        SpawnLandingShockwaves(landingPosition);
+
+        float landingHitRadius = landingTelegraph != null ? landingTelegraph.transform.localScale.y / 2f : 7.5f;
+        float distance = targetPlayer != null
+            ? Vector2.Distance(landingPosition, targetPlayer.position)
+            : float.MaxValue;
+        if (distance < landingHitRadius)
         {
-            Vector2 knockDir = ((Vector2)targetPlayer.position - (Vector2)transform.position).normalized;
+            Vector2 knockDir = ((Vector2)targetPlayer.position - landingPosition).normalized;
             if (cachedPlayerStats != null)
             {
                 cachedPlayerStats.TakeDamage(directLandingDamage, knockDir, 4f);
@@ -370,6 +394,42 @@ public class Boss1AI : MonoBehaviour
             Debug.Log($"{gameObject.name} jump attack missed (Player dodged).");
             currentState = Boss1State.EndlagRecovery;
             stateTimer = jumpEndlagDuration;
+        }
+    }
+
+    private void SpawnLandingShockwaves(Vector2 landingPosition)
+    {
+        if (shockwavePrefab == null)
+        {
+            Debug.LogWarning($"[{gameObject.name}] shockwavePrefab is not assigned; landing projectiles were skipped.");
+            return;
+        }
+
+        int projectileCount = Mathf.Max(1, landingShockwaveProjectileCount);
+        float angleStep = 360f / projectileCount;
+        HashSet<charStats> hitTargets = new HashSet<charStats>();
+
+        for (int i = 0; i < projectileCount; i++)
+        {
+            float angle = angleStep * i;
+            Vector2 direction = new Vector2(
+                Mathf.Cos(angle * Mathf.Deg2Rad),
+                Mathf.Sin(angle * Mathf.Deg2Rad));
+
+            GameObject projectile = Instantiate(
+                shockwavePrefab,
+                landingPosition,
+                Quaternion.Euler(0f, 0f, angle));
+
+            ShockProjectile shockProjectile = projectile.GetComponent<ShockProjectile>();
+            if (shockProjectile != null)
+            {
+                shockProjectile.Initialize(direction, shockwaveDamage, hitTargets);
+            }
+            else
+            {
+                Debug.LogWarning($"[{gameObject.name}] shockwavePrefab has no ShockProjectile component.");
+            }
         }
     }
 

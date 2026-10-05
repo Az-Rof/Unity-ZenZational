@@ -5125,6 +5125,7 @@ MonoBehaviour:
   screenRadius: 30
   jumpEndlagDuration: 1.5
   shockwave: {fileID: 5159944448713170546}
+  landingShockwaveProjectileCount: 8
   attackWindupDuration: 0.3
   attackEndlagDuration: 0.6
   attackHitRadius: 1.5

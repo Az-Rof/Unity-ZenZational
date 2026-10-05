@@ -18,6 +18,9 @@
     "com.unity.timeline": "1.8.12",
     "com.unity.ugui": "2.5.0",
     "com.unity.visualscripting": "1.9.11",
+    "jp.keijiro.abcvfx": "0.0.4",
+    "jp.keijiro.kino-glitch.universal": "1.0.0",
+    "jp.keijiro.noiseshader": "3.0.1",
     "com.unity.modules.accessibility": "1.0.0",
     "com.unity.modules.adaptiveperformance": "1.0.0",
     "com.unity.modules.ai": "1.0.0",
@@ -52,5 +55,14 @@
     "com.unity.modules.video": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
     "com.unity.modules.xr": "1.0.0"
-  }
+  },
+  "scopedRegistries": [
+    {
+      "name": "Kenjiro",
+      "url": "https://registry.npmjs.com",
+      "scopes": [
+        "jp.keijiro"
+      ]
+    }
+  ]
 }
