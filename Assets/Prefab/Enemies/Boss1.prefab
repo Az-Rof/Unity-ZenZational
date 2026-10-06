@@ -5126,7 +5126,7 @@ MonoBehaviour:
   jumpEndlagDuration: 1.5
   shockwave: {fileID: 5159944448713170546}
   landingShockwaveProjectileCount: 8
-  attackWindupDuration: 0.3
+  attackWindupDuration: 0.35
   attackEndlagDuration: 0.6
   attackHitRadius: 1.5
   attackSounds:
@@ -5161,7 +5161,7 @@ MonoBehaviour:
     frames: []
   - name: Attack
     resourceDirectory: Animations/Characters/Zombie/Attack
-    framePrefix: 
-    FPS: 12
+    framePrefix: ZombieAttack
+    FPS: 40
     loop: 0
     frames: []

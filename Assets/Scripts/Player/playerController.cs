@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -21,6 +22,8 @@ public class playerController : MonoBehaviour
     [SerializeField] private GameObject playerProjectilePrefab;
     [SerializeField] private Transform gunHoldPoint;
     [SerializeField] private gun currentGun;
+    [SerializeField] private Transform cam;
+
 
     [Header("Aiming & Gun Hold Behavior")]
     [SerializeField] private PlayerAimMode aimMode = PlayerAimMode.OrbitGunAroundPlayer;
@@ -45,6 +48,7 @@ public class playerController : MonoBehaviour
     public bool IsInScavengeMode => currentGun != null && currentGun.IsAmmoDepleted;
 
     /// The Slider used to visualize the player's health (assigned via Inspector).
+    bool moving;
 
     void Awake()
     {
@@ -62,6 +66,20 @@ public class playerController : MonoBehaviour
         stats = GetComponent<charStats>();
         InitializeGun();
         SetupHPSlider();
+        StartCoroutine(WalkingSound());
+    }
+
+    IEnumerator WalkingSound()
+    {
+        while (true)
+        {
+            if (moving)
+            {
+                // Play walking sound here
+                AudioManager.Instance.PlaySFX("playerwalk");
+            }
+            yield return new WaitForSeconds(0.35f / (stats.speed/10)); // Adjust the interval as needed
+        }
     }
 
     void Update()
@@ -178,7 +196,9 @@ public class playerController : MonoBehaviour
         }
 
         Vector2 direction = new Vector2(horizontal, vertical).normalized;
-
+     
+            moving = (direction.magnitude > 0.1f);
+        
         if (rb2d != null)
         {
             rb2d.linearVelocity = direction * stats.speed;
@@ -218,7 +238,9 @@ public class playerController : MonoBehaviour
         }
         else if (aimMode == PlayerAimMode.RotateEntirePlayer)
         {
-            transform.rotation = Quaternion.Euler(0f, 0f, angle);
+            transform.rotation = Quaternion.Euler(0f, 0f, angle - 90f);
+            cam.rotation = Quaternion.Euler(0f, 0f, 0);
+
         }
     }
 }

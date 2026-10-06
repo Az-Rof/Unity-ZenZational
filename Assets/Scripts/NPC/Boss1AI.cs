@@ -18,6 +18,7 @@ public class Boss1AI : MonoBehaviour
         Stunned
     }
 
+
     [Header("State & Targeting")]
     [SerializeField] private Boss1State currentState = Boss1State.Chase;
     [SerializeField] private Transform targetPlayer;
@@ -259,6 +260,8 @@ public class Boss1AI : MonoBehaviour
     private IEnumerator PerformMeleeAttackRoutine()
     {
         currentState = Boss1State.WindupAttack;
+        ZA.StopAnimation();
+        ZA.PlayAnimation("Attack");
         // Halt movement during windup
         if (rb2d != null) rb2d.linearVelocity = Vector2.zero;
 
@@ -302,6 +305,7 @@ public class Boss1AI : MonoBehaviour
 
         // Transition to Endlag / Recovery state
         currentState = Boss1State.EndlagRecovery;
+        walking = false;
         stateTimer = 0.5f;
     }
 
@@ -311,6 +315,8 @@ public class Boss1AI : MonoBehaviour
         currentState = Boss1State.WindupAttack;
         for (int i = 0; i < 10; i++)
         {
+            ZA.StopAnimation();
+            ZA.PlayAnimation("Attack");
             yield return new WaitForSeconds(attackWindupDuration);
             GameObject barrelInstance = Instantiate(barrel, transform.position, Quaternion.identity);
             ExplosiveBarrel br = barrelInstance.GetComponent<ExplosiveBarrel>();
@@ -322,6 +328,7 @@ public class Boss1AI : MonoBehaviour
             Vector2 direction = ((Vector2)targetPlayer.position - (Vector2)transform.position).normalized;
             rb2d.linearVelocity = direction * stats.speed/2;
             yield return new WaitForSeconds(0.125f * Random.Range(2f,8f));
+            ZA.PlayAnimation("Walking");
         }
         if (cachedPlayerStats.currentHealth < projectedHP)
         {

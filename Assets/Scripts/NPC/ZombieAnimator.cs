@@ -13,35 +13,49 @@ public class ZombieAnimator : MonoBehaviour
         [Tooltip("Path inside Resources folder, without Resources/")]
         public string resourceDirectory;
 
+        [Tooltip("Beginning of the frame filename, e.g. ZombieWalk")]
         public string framePrefix;
+
+        [Min(1f)]
         public float FPS = 12f;
+
         public bool loop = true;
 
         [HideInInspector]
         public Sprite[] frames;
     }
 
+    [Header("References")]
     public SpriteRenderer spriteRenderer;
+
+    [Header("Animations")]
     public List<AnimationData> animations = new List<AnimationData>();
 
     private AnimationData currentAnimation;
     private Coroutine animationCoroutine;
 
-    void Awake()
+    // =========================================================
+    // INITIALIZATION
+    // =========================================================
+
+    private void Awake()
     {
         LoadAllAnimations();
     }
 
-    void Start()
+    private void Start()
     {
-        // Test animation
         if (animations.Count > 0)
         {
             PlayAnimation(animations[0].name);
         }
     }
 
-    void LoadAllAnimations()
+    // =========================================================
+    // LOAD ANIMATIONS
+    // =========================================================
+
+    private void LoadAllAnimations()
     {
         foreach (AnimationData animation in animations)
         {
@@ -49,7 +63,7 @@ public class ZombieAnimator : MonoBehaviour
                 Resources.LoadAll<Sprite>(animation.resourceDirectory);
 
             Debug.Log(
-                $"Loaded {loadedSprites.Length} sprites from " +
+                $"[{name}] Loaded {loadedSprites.Length} sprites from " +
                 $"Resources/{animation.resourceDirectory}"
             );
 
@@ -63,98 +77,207 @@ public class ZombieAnimator : MonoBehaviour
                 }
             }
 
+
+            // Sort frames numerically based on the number
+            // at the end of their filename.
             validFrames.Sort((a, b) =>
-                ExtractNumber(a.name, animation.framePrefix)
-                .CompareTo(
-                ExtractNumber(b.name, animation.framePrefix))
-            );
+            {
+                int numberA = ExtractNumber(a.name, animation.framePrefix);
+                int numberB = ExtractNumber(b.name, animation.framePrefix);
+
+                return numberA.CompareTo(numberB);
+            });
 
             animation.frames = validFrames.ToArray();
 
             Debug.Log(
-                $"Animation '{animation.name}' found " +
+                $"[{name}] Animation '{animation.name}' found " +
                 $"{animation.frames.Length} frames."
             );
 
-            foreach (Sprite frame in animation.frames)
+            // Print frame order for debugging
+            for (int i = 0; i < animation.frames.Length; i++)
             {
-                Debug.Log("  " + frame.name);
+                Debug.Log(
+                    $"[{animation.name}] Frame {i}: " +
+                    animation.frames[i].name
+                );
             }
         }
     }
 
-    int ExtractNumber(string name, string prefix)
+    int ExtractNumber(string fileName, string prefix)
     {
-        string number = name.Substring(prefix.Length);
+        string numberPart = fileName.Substring(prefix.Length);
 
-        if (int.TryParse(number, out int result))
+        int underscoreIndex = numberPart.IndexOf('_');
+
+        if (underscoreIndex >= 0)
+        {
+            numberPart = numberPart.Substring(0, underscoreIndex);
+        }
+
+        if (int.TryParse(numberPart, out int result))
+        {
             return result;
+        }
 
         Debug.LogWarning(
-            $"Couldn't extract frame number from {name}"
+            $"Couldn't extract frame number from '{fileName}'"
         );
 
         return 0;
     }
 
+    // =========================================================
+    // PLAY ANIMATION
+    // =========================================================
+
     public void PlayAnimation(string animationName)
     {
+        PlayAnimation(animationName, false);
+    }
+
+    public void PlayAnimation(string animationName, bool forceRestart)
+    {
+
         AnimationData animation =
             animations.Find(x => x.name == animationName);
 
         if (animation == null)
         {
             Debug.LogError(
-                $"Animation '{animationName}' doesn't exist!"
+                $"[{name}] Animation '{animationName}' doesn't exist!"
             );
 
             return;
         }
 
-        if (animation.frames == null || animation.frames.Length == 0)
+        if (animation.frames == null ||
+            animation.frames.Length == 0)
         {
             Debug.LogError(
-                $"Animation '{animationName}' has no frames!"
+                $"[{name}] Animation '{animationName}' has no frames!"
             );
 
             return;
         }
 
-        // Don't restart the same animation
-        if (currentAnimation == animation)
+        // Don't restart the same animation unless
+        // forceRestart is true.
+        if (currentAnimation == animation && !forceRestart)
+        {
             return;
+        }
+
+        // Stop previous animation
+        if (animationCoroutine != null)
+        {
+            StopCoroutine(animationCoroutine);
+        }
 
         currentAnimation = animation;
-
-        if (animationCoroutine != null)
-            StopCoroutine(animationCoroutine);
 
         animationCoroutine =
             StartCoroutine(PlayAnimationCoroutine(animation));
     }
 
-    IEnumerator PlayAnimationCoroutine(AnimationData animation)
+    // =========================================================
+    // ANIMATION PLAYBACK
+    // =========================================================
+
+    private IEnumerator PlayAnimationCoroutine(AnimationData animation)
     {
-        float frameTime = 1f / animation.FPS;
-
-        do
+        if (animation.FPS <= 0)
         {
-            foreach (Sprite frame in animation.frames)
-            {
-                spriteRenderer.sprite = frame;
+            Debug.LogError(
+                $"[{name}] Animation '{animation.name}' has an FPS <= 0!"
+            );
 
-                yield return new WaitForSeconds(frameTime);
+            yield break;
+        }
+
+        float frameDuration = 1f / animation.FPS;
+
+        int currentFrame = 0;
+
+        float timer = 0f;
+
+        // Immediately display the first frame.
+        spriteRenderer.sprite = animation.frames[currentFrame];
+
+        while (true)
+        {
+            timer += Time.deltaTime;
+
+            if (timer >= frameDuration)
+            {
+                // Account for excess time so the animation
+                // doesn't slowly drift.
+                timer -= frameDuration;
+
+                currentFrame++;
+
+                // Reached the end of the animation
+                if (currentFrame >= animation.frames.Length)
+                {
+                    if (animation.loop)
+                    {
+                        currentFrame = 0;
+                    }
+                    else
+                    {
+                        // Hold on the final frame.
+                        currentFrame =
+                            animation.frames.Length - 1;
+
+                        currentAnimation = null;
+                        animationCoroutine = null;
+
+                        yield break;
+                    }
+                }
+
+                spriteRenderer.sprite =
+                    animation.frames[currentFrame];
             }
 
-        } while (animation.loop);
+            yield return null;
+        }
     }
+
+    // =========================================================
+    // STOP
+    // =========================================================
 
     public void StopAnimation()
     {
         if (animationCoroutine != null)
         {
             StopCoroutine(animationCoroutine);
+
             animationCoroutine = null;
         }
+
+        currentAnimation = null;
+    }
+
+    // =========================================================
+    // GET CURRENT ANIMATION
+    // =========================================================
+
+    public string GetCurrentAnimation()
+    {
+        if (currentAnimation == null)
+        {
+            return "";
+        }
+
+        return currentAnimation.name;
+    }
+
+    public bool IsPlaying()
+    {
+        return currentAnimation != null;
     }
 }

@@ -137,7 +137,7 @@ public class WaveManager : MonoBehaviour
             BuffSystem.Instance?.TriggerBuffSelection();
             yield return WaitForBuffChoice();
 
-            if (currentWave == 2 && HasWaveEvent(2, "SpawnBoss1"))
+            if (currentWave == 3 && HasWaveEvent(3, "SpawnFinalBoss"))
             {
                 if (glitchingManager != null)
                     yield return glitchingManager.PlayFakePowerOff(wave2FakePowerOffDuration);

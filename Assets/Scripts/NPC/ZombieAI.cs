@@ -215,6 +215,8 @@ public class ZombieAI : MonoBehaviour
     private IEnumerator PerformMeleeAttackRoutine()
     {
         currentState = ZombieState.WindupAttack;
+        ZA.StopAnimation();
+        ZA.PlayAnimation("Attack");
 
         // Halt movement during windup
         if (rb2d != null) rb2d.linearVelocity = Vector2.zero;
@@ -272,6 +274,7 @@ public class ZombieAI : MonoBehaviour
         {
             // End of recovery window; return to Range Check & Chase
             currentState = ZombieState.Chase;
+            walking = false;
         }
     }
 
