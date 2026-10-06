@@ -4792,22 +4792,22 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1957460009}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7e8ccbb38aef03e47ba5dfe912750c20, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WaveManager
   zombiePrefab: {fileID: 5935649346357155513, guid: cfb36152e19c3b34080c1d02a319161a, type: 3}
   boss1Prefab: {fileID: 5935649346357155513, guid: 352f3d08c58f30742bbc73b3f34b28b9, type: 3}
-  finalBossPrefab: {fileID: 5935649346357155513, guid: 352f3d08c58f30742bbc73b3f34b28b9, type: 3}
+  finalBossPrefab: {fileID: 5935649346357155513, guid: bb418d75bd1b6684b9f05b09adcb4feb, type: 3}
   finalBossDecoyPrefab: {fileID: 5935649346357155513, guid: cfb36152e19c3b34080c1d02a319161a, type: 3}
   finalBossExplosionPrefab: {fileID: 0}
   finalBossRevealFace: {fileID: 0}
   events:
-  - waveNumber: 2
-    eventName: SpawnBoss1
   - waveNumber: 3
     eventName: SpawnFinalBoss
+  - waveNumber: 2
+    eventName: SpawnBoss1
   startingWaveSize: 10
   waveTide: 5
   spawnInterval: 0.5
@@ -4823,10 +4823,10 @@ MonoBehaviour:
   finalZombieWave: 3
   waitForBoss1Defeat: 1
   glitchingManager: {fileID: 519420036}
-  wave2GlitchPercent: 5
+  wave2GlitchPercent: 2
   wave2GlitchDuration: 30
   wave2FakePowerOffDuration: 1.25
-  wave3GlitchPercent: 10
+  wave3GlitchPercent: 3
   wave3GlitchDuration: 3
   finalRevealBlackDuration: 2
   finalFaceLungeDuration: 0.12

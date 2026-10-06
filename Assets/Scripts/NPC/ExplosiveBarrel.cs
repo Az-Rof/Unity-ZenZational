@@ -1,69 +1,184 @@
-using System;
 using System.Collections;
 using UnityEngine;
 
 public class ExplosiveBarrel : MonoBehaviour
 {
-
+    [Tooltip("Optional fixed landing position. Used when no target player is assigned.")]
     public Vector2 landingPos;
     [HideInInspector] public float damage = 20f;
+
+    [Header("Flight & Prediction")]
+    [SerializeField, Min(0.1f)] private float flightSpeed = 12.5f;
+    [SerializeField, Min(0f)] private float maxPredictionTime = 1.25f;
+    [SerializeField, Min(0f)] private float maxPredictionDistance = 5f;
+    [SerializeField, Min(0f)] private float landingScatterRadius;
+    [SerializeField, Min(0.1f)] private float warningRadius = 5f;
+
     [SerializeField] private ParticleSystem efx;
     [SerializeField] private GameObject circ;
-    charStats stats;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    private Transform targetPlayer;
+    private charStats playerStats;
+    private Rigidbody2D playerRigidbody;
+    private Vector2 previousPlayerPosition;
+    private Vector2 estimatedPlayerVelocity;
+    private bool hasPreviousPlayerPosition;
+    private bool hasFixedLandingPosition;
+
+    /// <summary>
+    /// Supplies the intended player target before the barrel's Start runs.
+    /// The barrel estimates travel time and leads the target based on movement velocity.
+    /// </summary>
+    public void Initialize(Transform playerTarget, float barrelDamage, float scatterRadius = 0f)
     {
-        stats = GameObject.Find("Player").GetComponent<charStats>();
+        targetPlayer = playerTarget;
+        damage = barrelDamage;
+        landingScatterRadius = Mathf.Max(0f, scatterRadius);
+        hasFixedLandingPosition = false;
+        CachePlayerReferences();
+    }
+
+    private void Start()
+    {
+        // Boss1AI supplies a fixed landingPos. Preserve that legacy behavior;
+        // the final boss instead calls Initialize with a target transform.
+        hasFixedLandingPosition = targetPlayer == null && landingPos != Vector2.zero;
+        if (targetPlayer == null && !hasFixedLandingPosition) FindPlayerTarget();
+        CachePlayerReferences();
         StartCoroutine(Fling());
     }
 
-    IEnumerator Fling()
+    private void Update()
     {
-        while (landingPos == Vector2.zero)
+        if (targetPlayer == null) return;
+
+        Vector2 currentPosition = targetPlayer.position;
+        if (playerRigidbody != null && playerRigidbody.linearVelocity.sqrMagnitude > 0.01f)
         {
-            yield return null; // Wait until landingPos is set
+            estimatedPlayerVelocity = playerRigidbody.linearVelocity;
         }
-        Vector2 DefaultSize = transform.localScale;
-        Vector2 HeightSize = transform.localScale*2;
-        Vector2 startPos = transform.position;
-        float duration = Vector2.Distance(transform.position, landingPos) / 12.5f; // Adjust the divisor for desired fling speed
+        else if (hasPreviousPlayerPosition && Time.deltaTime > 0f)
+        {
+            // Fallback for players moved by Transform rather than a Rigidbody2D.
+            estimatedPlayerVelocity = (currentPosition - previousPlayerPosition) / Time.deltaTime;
+        }
+
+        previousPlayerPosition = currentPosition;
+        hasPreviousPlayerPosition = true;
+    }
+
+    private IEnumerator Fling()
+    {
+        // Legacy callers can still set landingPos directly. New boss barrels are
+        // assigned a target and have their predicted landing point calculated here.
+        if (targetPlayer != null)
+        {
+            // Give Update one frame to sample player movement when its velocity
+            // is not available from Rigidbody2D.
+            yield return null;
+            landingPos = PredictLandingPosition();
+        }
+
+        while (targetPlayer == null && !hasFixedLandingPosition && landingPos == Vector2.zero)
+            yield return null;
+
+        Vector3 defaultSize = transform.localScale;
+        Vector3 heightSize = defaultSize * 2f;
+        Vector2 startPosition = transform.position;
+        float duration = Mathf.Max(0.05f, Vector2.Distance(startPosition, landingPos) / Mathf.Max(0.1f, flightSpeed));
         float elapsedTime = 0f;
-        GameObject aC = Instantiate(circ, landingPos, Quaternion.identity);
-        aC.transform.localScale = new Vector2(10, 10);
-        SpriteRenderer acSR = aC.GetComponent<SpriteRenderer>();
+
+        GameObject warning = null;
+        SpriteRenderer warningRenderer = null;
+        if (circ != null)
+        {
+            warning = Instantiate(circ, landingPos, Quaternion.identity);
+            warning.transform.localScale = Vector3.one * warningRadius * 2f;
+            warningRenderer = warning.GetComponentInChildren<SpriteRenderer>();
+        }
+
         while (elapsedTime < duration)
         {
-            transform.Rotate(Vector3.forward, 360 * Time.deltaTime); // Rotate the barrel
-            if (elapsedTime < duration / 2)
+            transform.Rotate(Vector3.forward, 360f * Time.deltaTime);
+            float t = Mathf.Clamp01(elapsedTime / duration);
+            float sizeT = t < 0.5f ? t * 2f : (1f - t) * 2f;
+            transform.localScale = Vector3.Lerp(defaultSize, heightSize, sizeT);
+
+            if (warningRenderer != null)
             {
-                transform.localScale = Vector2.Lerp(
-                    DefaultSize,
-                    HeightSize,
-                    elapsedTime / (duration / 2)
-                );
+                Color color = warningRenderer.color;
+                color.a = Mathf.Lerp(0f, 0.5f, t);
+                warningRenderer.color = color;
             }
-            else
-            {
-                transform.localScale = Vector2.Lerp(
-                    HeightSize,
-                    DefaultSize,
-                    (elapsedTime - duration / 2) / (duration / 2)
-                );
-            }
-            acSR.color = new Color(acSR.color.r, acSR.color.g, acSR.color.b, Mathf.Lerp(0f, 0.5f, elapsedTime / duration));
-            transform.position = Vector2.Lerp(startPos, landingPos, elapsedTime / duration);
+
+            transform.position = Vector2.Lerp(startPosition, landingPos, t);
             elapsedTime += Time.deltaTime;
             yield return null;
         }
-        Destroy(aC);
-        GetComponent<SpriteRenderer>().enabled = false; // Hide the barrel sprite>
-        efx.Play();
-        AudioManager.Instance.PlaySFX("explosion");
-        if (Vector2.Distance(stats.transform.position, landingPos) < circ.transform.localScale.y/2)
+
+        transform.position = landingPos;
+        transform.localScale = defaultSize;
+        if (warning != null) Destroy(warning);
+
+        SpriteRenderer barrelRenderer = GetComponentInChildren<SpriteRenderer>();
+        if (barrelRenderer != null) barrelRenderer.enabled = false;
+        if (efx != null) efx.Play();
+        AudioManager.Instance?.PlaySFX("explosion");
+
+        float blastRadius = circ != null ? warningRadius : 0f;
+        if (playerStats != null && !playerStats.IsDead &&
+            Vector2.Distance(playerStats.transform.position, landingPos) <= blastRadius)
         {
-            stats.TakeDamage(damage);
+            playerStats.TakeDamage(damage);
         }
-        Destroy(gameObject, efx.main.duration); // Destroy the barrel after the particle effect duration)
+
+        float effectDuration = efx != null ? efx.main.duration : 0f;
+        Destroy(gameObject, effectDuration);
+    }
+
+    private Vector2 PredictLandingPosition()
+    {
+        Vector2 playerPosition = targetPlayer.position;
+        Vector2 velocity = GetPlayerVelocity();
+        float travelTime = Vector2.Distance(transform.position, playerPosition) / Mathf.Max(0.1f, flightSpeed);
+
+        // Refine travel time a few times because leading the player also changes
+        // the distance the barrel has to travel.
+        for (int i = 0; i < 3; i++)
+        {
+            travelTime = Mathf.Min(maxPredictionTime,
+                Vector2.Distance(transform.position, playerPosition + velocity * travelTime) / Mathf.Max(0.1f, flightSpeed));
+        }
+
+        Vector2 lead = Vector2.ClampMagnitude(velocity * travelTime, maxPredictionDistance);
+        return playerPosition + lead + Random.insideUnitCircle * landingScatterRadius;
+    }
+
+    private Vector2 GetPlayerVelocity()
+    {
+        if (playerRigidbody != null)
+            return playerRigidbody.linearVelocity;
+        return estimatedPlayerVelocity;
+    }
+
+    private void FindPlayerTarget()
+    {
+        GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
+        if (playerObject == null)
+        {
+            playerController controller = FindAnyObjectByType<playerController>();
+            if (controller != null) playerObject = controller.gameObject;
+        }
+
+        if (playerObject != null) targetPlayer = playerObject.transform;
+    }
+
+    private void CachePlayerReferences()
+    {
+        if (targetPlayer == null) return;
+        playerStats = targetPlayer.GetComponent<charStats>();
+        playerRigidbody = targetPlayer.GetComponent<Rigidbody2D>();
+        previousPlayerPosition = targetPlayer.position;
+        hasPreviousPlayerPosition = true;
     }
 }
