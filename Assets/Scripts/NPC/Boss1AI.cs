@@ -96,6 +96,7 @@ public class Boss1AI : MonoBehaviour
         FindPlayerTarget();
         stats.OnCharacterDied += HandleDeath;
         ZA = GetComponent<ZombieAnimator>();
+        AudioManager.Instance.PlayMusic("Boss1Theme");
     }
 
     void Update()   

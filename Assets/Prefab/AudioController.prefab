@@ -51,6 +51,8 @@ MonoBehaviour:
     audioClip: {fileID: 8300000, guid: df24f0c1b364a304c856e57631a09977, type: 3}
   - name: Titlescreen
     audioClip: {fileID: 8300000, guid: 0c63293d4e5cc12479fe898a7fc141fc, type: 3}
+  - name: Boss1Theme
+    audioClip: {fileID: 8300000, guid: 9b08bc1c8a32319419277aa05b95f298, type: 3}
   sfxSounds:
   - name: 762x39 Single WAV
     audioClip: {fileID: 8300000, guid: e2c69a064b847ed4bbeec1fe7f91fcb7, type: 3}
