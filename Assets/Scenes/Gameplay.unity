@@ -1606,7 +1606,9 @@ MonoBehaviour:
   effectMode: 2
   intensityPercent: 1
   duration: 1
+  faceRevealScreamSfxName: scream
   faceRevealScream: {fileID: 0}
+  glitchSfxName: glitch
   testKey: 21
 --- !u!114 &519420037
 MonoBehaviour:
@@ -6165,6 +6167,26 @@ PrefabInstance:
       propertyPath: musicSlider
       value: 
       objectReference: {fileID: 397483944}
+    - target: {fileID: 1533958807560274644, guid: f773361246e52e041afde32065fc44ab, type: 3}
+      propertyPath: sfxSounds.Array.size
+      value: 21
+      objectReference: {fileID: 0}
+    - target: {fileID: 1533958807560274644, guid: f773361246e52e041afde32065fc44ab, type: 3}
+      propertyPath: sfxSounds.Array.data[19].name
+      value: glitch2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1533958807560274644, guid: f773361246e52e041afde32065fc44ab, type: 3}
+      propertyPath: sfxSounds.Array.data[20].name
+      value: scream
+      objectReference: {fileID: 0}
+    - target: {fileID: 1533958807560274644, guid: f773361246e52e041afde32065fc44ab, type: 3}
+      propertyPath: sfxSounds.Array.data[19].audioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: ba153ee881f99c74fb258b8ba9ceb35b, type: 3}
+    - target: {fileID: 1533958807560274644, guid: f773361246e52e041afde32065fc44ab, type: 3}
+      propertyPath: sfxSounds.Array.data[20].audioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 5439c4da78209434e89b5f86843a4f9e, type: 3}
     - target: {fileID: 2016521404874677640, guid: f773361246e52e041afde32065fc44ab, type: 3}
       propertyPath: m_Name
       value: AudioController

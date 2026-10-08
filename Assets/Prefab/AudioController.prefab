@@ -92,6 +92,12 @@ MonoBehaviour:
     audioClip: {fileID: 8300000, guid: 5f07bf38e13bb04479871b0e6abcfd52, type: 3}
   - name: barrelthrow
     audioClip: {fileID: 8300000, guid: 992da9df0c877774c8c1b1a0bbbb036f, type: 3}
+  - name: glitch
+    audioClip: {fileID: 8300000, guid: 4b6607ea48288ac45b1a60c40483d210, type: 3}
+  - name: glitch2
+    audioClip: {fileID: 8300000, guid: ba153ee881f99c74fb258b8ba9ceb35b, type: 3}
+  - name: scream
+    audioClip: {fileID: 8300000, guid: 5439c4da78209434e89b5f86843a4f9e, type: 3}
   musicSource: {fileID: 7805293388530403582}
   sfxSource: {fileID: 8761314022700891246}
   musicSlider: {fileID: 0}

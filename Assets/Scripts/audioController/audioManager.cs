@@ -228,19 +228,30 @@ public class AudioManager : MonoBehaviour
     //     }
     //     return;
     // }
-    public AudioSource PlaySFXLoop(string name, float startTime, float finishTime)
+    public AudioSource PlaySFXLoop(string name, float startTime = 0f, float finishTime = 0f)
     {
         Audio sound = Array.Find(sfxSounds, x => x.name == name);
 
-        if (sound == null)
+        if (sound == null || sound.audioClip == null)
         {
             Debug.LogError($"SFX sound not found: {name}");
             return null;
         }
 
         AudioClip clip = sound.audioClip;
+        if (clip.length <= 0f)
+        {
+            Debug.LogError($"SFX sound has no duration and cannot loop: {name}");
+            return null;
+        }
+
         float start = Mathf.Clamp(startTime, 0f, clip.length);
-        float finish = Mathf.Clamp(finishTime, start + 0.001f, clip.length);
+        float finish = finishTime > start ? Mathf.Clamp(finishTime, start, clip.length) : clip.length;
+        if (finish <= start)
+        {
+            start = 0f;
+            finish = clip.length;
+        }
 
         GameObject tempSFX = new GameObject($"SFX_{name}_Loop");
         AudioSource tempAudioSource = tempSFX.AddComponent<AudioSource>();

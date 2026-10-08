@@ -30,12 +30,19 @@ public class GlitchingManager : MonoBehaviour
     [SerializeField] private float duration = 1f;
 
     [Header("Final Boss Reveal")]
-    [Tooltip("Assign a scream audio clip for the face reveal. Leave empty to keep the reveal silent.")]
+    [Tooltip("SFX name registered in AudioController for the final boss face reveal.")]
+    [SerializeField] private string faceRevealScreamSfxName = "scream";
+
+    [Tooltip("Optional fallback clip used only when no AudioManager is available.")]
     [SerializeField] private AudioClip faceRevealScream;
+
+    [Header("Glitch Audio")]
+    [SerializeField] private string glitchSfxName = "glitch";
 
     [SerializeField] private Key testKey = Key.G;
 
     private Coroutine stopRoutine;
+    private AudioSource glitchLoopSource;
     private Image powerOffOverlay;
     private Image faceRevealOverlay;
     private float savedAudioListenerVolume = 1f;
@@ -61,8 +68,29 @@ public class GlitchingManager : MonoBehaviour
     /// <summary>Plays a glitch pulse with parameters supplied by a gameplay sequence.</summary>
     public void PlayGlitch(int mode, int strengthPercent, float effectDuration)
     {
+        ApplyGlitch(mode, strengthPercent, effectDuration, true, true);
+    }
+
+    /// <summary>Plays the visual glitch without its SFX, for boss combat readability.</summary>
+    public void PlayGlitchSilently(int mode, int strengthPercent, float effectDuration)
+    {
+        ApplyGlitch(mode, strengthPercent, effectDuration, false, true);
+    }
+
+    private void ApplyGlitch(
+        int mode,
+        int strengthPercent,
+        float effectDuration,
+        bool playGlitchAudio,
+        bool stopAudioWhenSilent)
+    {
         mode = Mathf.Clamp(mode, (int)GlitchMode.Analog, (int)GlitchMode.Both);
         float amount = Mathf.Clamp(strengthPercent, 0, 100) / 100f;
+
+        if (amount <= 0f || (!playGlitchAudio && stopAudioWhenSilent))
+            StopGlitchAudio();
+        else if (playGlitchAudio)
+            StartGlitchAudio();
 
         if (analog != null)
         {
@@ -93,7 +121,10 @@ public class GlitchingManager : MonoBehaviour
     /// <summary>Sets persistent corruption using the selected Inspector mode.</summary>
     public void SetWaveGlitch(int strengthPercent)
     {
-        PlayGlitch((int)effectMode, strengthPercent, 0f);
+        // The wave pulse already played its one-shot SFX; this call keeps the
+        // visual distortion active without triggering the sound a second time.
+        // Keep an already-running loop alive while extending the visual glitch.
+        ApplyGlitch((int)effectMode, strengthPercent, 0f, false, false);
     }
 
     /// <summary>Plays the selected glitch effect before the final reveal blackout.</summary>
@@ -120,7 +151,7 @@ public class GlitchingManager : MonoBehaviour
         foreach (float alpha in flickerAlpha)
         {
             SetOverlayAlpha(overlay, alpha);
-            PlayGlitch((int)effectMode, 85, 0.12f);
+            ApplyGlitch((int)effectMode, 85, 0.12f, true, true);
             yield return new WaitForSecondsRealtime(0.07f);
         }
 
@@ -175,6 +206,9 @@ public class GlitchingManager : MonoBehaviour
         if (faceSprite != null)
         {
             SetOverlayAlpha(faceOverlay, 1f);
+            PlayFaceRevealScream();
+            onScream?.Invoke();
+
             float elapsed = 0f;
             float duration = Mathf.Max(0.01f, faceRevealSeconds);
             while (elapsed < duration)
@@ -188,14 +222,6 @@ public class GlitchingManager : MonoBehaviour
             faceRect.localScale = Vector3.one * Mathf.Max(0.01f, faceScale);
             yield return new WaitForSecondsRealtime(Mathf.Max(0f, stareSeconds));
         }
-
-        AudioListener.volume = savedAudioListenerVolume;
-        audioMutedForFaceReveal = false;
-        if (faceRevealScream != null)
-            AudioSource.PlayClipAtPoint(faceRevealScream, Camera.main != null ? Camera.main.transform.position : Vector3.zero);
-        else
-            Debug.LogWarning("[GlitchingManager] Assign Face Reveal Scream to play the final boss scream.", this);
-        onScream?.Invoke();
 
         // Hold the face under darkness while the scream begins, then reveal the
         // boss opening attack at the cut back to gameplay.
@@ -261,6 +287,9 @@ public class GlitchingManager : MonoBehaviour
         if (faceSprite1 != null)
         {
             SetOverlayAlpha(faceOverlay, 1f);
+            PlayFaceRevealScream();
+            onScream?.Invoke();
+
             float elapsed = 0f;
             float duration = Mathf.Max(0.01f, faceRevealSeconds);
             while (elapsed < duration)
@@ -273,14 +302,6 @@ public class GlitchingManager : MonoBehaviour
             }
             faceRect.localScale = Vector3.one * Mathf.Max(0.01f, faceScale);
         }
-
-        AudioListener.volume = savedAudioListenerVolume;
-        audioMutedForFaceReveal = false;
-        if (faceRevealScream != null)
-            AudioSource.PlayClipAtPoint(faceRevealScream, Camera.main != null ? Camera.main.transform.position : Vector3.zero);
-        else
-            Debug.LogWarning("[GlitchingManager] Assign Face Reveal Scream to play the final boss scream.", this);
-        onScream?.Invoke();
 
         int oldIntensityPercent = intensityPercent;
         intensityPercent = 100;
@@ -324,6 +345,52 @@ public class GlitchingManager : MonoBehaviour
 
         if (digital != null)
             digital.Intensity = 0f;
+
+        StopGlitchAudio();
+    }
+
+    private void StartGlitchAudio()
+    {
+        if (glitchLoopSource != null || AudioManager.Instance == null || string.IsNullOrEmpty(glitchSfxName))
+            return;
+
+        glitchLoopSource = AudioManager.Instance.PlaySFXLoop(glitchSfxName);
+    }
+
+    private void StopGlitchAudio()
+    {
+        if (glitchLoopSource == null) return;
+
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.StopSFX(glitchLoopSource);
+        else
+            Destroy(glitchLoopSource.gameObject);
+
+        glitchLoopSource = null;
+    }
+
+    private void PlayFaceRevealScream()
+    {
+        if (audioMutedForFaceReveal)
+        {
+            AudioListener.volume = savedAudioListenerVolume;
+            audioMutedForFaceReveal = false;
+        }
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(faceRevealScreamSfxName);
+            return;
+        }
+
+        if (faceRevealScream != null)
+            AudioSource.PlayClipAtPoint(
+                faceRevealScream,
+                Camera.main != null ? Camera.main.transform.position : Vector3.zero);
+        else
+            Debug.LogWarning(
+                $"[GlitchingManager] No AudioManager is available to play '{faceRevealScreamSfxName}', and no fallback scream clip is assigned.",
+                this);
     }
 
     private IEnumerator StopAfterDelay(float delay)
