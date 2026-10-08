@@ -67,6 +67,7 @@ public class playerController : MonoBehaviour
         InitializeGun();
         SetupHPSlider();
         StartCoroutine(WalkingSound());
+
     }
 
     IEnumerator WalkingSound()

@@ -12,12 +12,12 @@ public class ExplosiveBarrel : MonoBehaviour
     [SerializeField, Min(0f)] private float maxPredictionTime = 1.25f;
     [SerializeField, Min(0f)] private float maxPredictionDistance = 5f;
     [SerializeField, Min(0f)] private float landingScatterRadius;
-    [SerializeField, Min(0.1f)] private float warningRadius = 5f;
+    [SerializeField, Min(0.1f)] public float warningRadius = 5f;
 
     [SerializeField] private ParticleSystem efx;
     [SerializeField] private GameObject circ;
 
-    private Transform targetPlayer;
+    public Transform targetPlayer;
     private charStats playerStats;
     private Rigidbody2D playerRigidbody;
     private Vector2 previousPlayerPosition;

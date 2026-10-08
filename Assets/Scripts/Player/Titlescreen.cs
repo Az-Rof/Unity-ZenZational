@@ -9,24 +9,29 @@ using UnityEngine.UI;
 public class Titlescreen : MonoBehaviour
 {
     public GameObject pausePanel, gameOverPanel;
+    Transition activeTransit;
 
     void Start()
     {
+        activeTransit = GameObject.Find("Transition").GetComponent<Transition>();
         if (SceneManager.GetActiveScene().buildIndex == 0)
         {
             Time.timeScale = 1f;
             AudioManager.Instance.PlayMusic("Titlescreen");
             Cursor.visible = true;
+
         }
         else if (SceneManager.GetActiveScene().buildIndex == 1)
         {
             AudioManager.Instance.PlayMusic("WaveMusic");
             Cursor.visible = false;
+            activeTransit.outFade();
         }
         else if (SceneManager.GetActiveScene().buildIndex == 2)
         {
             AudioManager.Instance.PlayMusic("credits");
             Cursor.visible = true;
+            activeTransit.outFade();
         }
     }
 
@@ -42,6 +47,13 @@ public class Titlescreen : MonoBehaviour
 
     public void startGame()
     {
+        StartCoroutine(Game());
+    }
+
+    IEnumerator Game()
+    {
+        activeTransit.inFade();
+        yield return new WaitForSecondsRealtime(activeTransit.duration + 0.5f);
         SceneManager.LoadScene(1);
     }
 

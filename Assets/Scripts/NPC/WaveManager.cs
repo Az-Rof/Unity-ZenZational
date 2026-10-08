@@ -117,7 +117,7 @@ public class WaveManager : MonoBehaviour
         for (currentWave = 1; currentWave <= finalZombieWave; currentWave++)
         {
             wC = currentWave - 1;
-            if (currentWave == 2)
+            if (currentWave == 4)
             {
                 if (glitchingManager != null)
                 {
@@ -125,7 +125,7 @@ public class WaveManager : MonoBehaviour
                     glitchingManager.SetWaveGlitch(wave2GlitchPercent);
                 }
             }
-            else if (currentWave >= 3)
+            else if (currentWave >= 6)
             {
                 if (glitchingManager != null)
                 {
@@ -141,7 +141,7 @@ public class WaveManager : MonoBehaviour
             BuffSystem.Instance?.TriggerBuffSelection();
             yield return WaitForBuffChoice();
 
-            if (currentWave == 3 && HasWaveEvent(3, "SpawnFinalBoss"))
+            if (currentWave == 5 && HasWaveEvent(5, "SpawnBoss1"))
             {
                 if (glitchingManager != null)
                     yield return glitchingManager.PlayFakePowerOff(wave2FakePowerOffDuration);
@@ -177,6 +177,7 @@ public class WaveManager : MonoBehaviour
             }
             yield return new WaitForSeconds(spawnInterval);
         }
+        spawnInterval = Mathf.Lerp(spawnInterval, 0, 0.125f);
     }
 
     private IEnumerator WaitUntilEnemiesDefeated()
@@ -208,7 +209,11 @@ public class WaveManager : MonoBehaviour
         {
             if (!IsPlayerAlive()) yield break;
             PruneDefeatedEnemies();
-            if (activeEnemies.Count == 0) yield break;
+            if (activeEnemies.Count == 0)
+            {
+                AudioManager.Instance.PlayMusic("WaveMusic");
+                yield break;
+            }
             yield return new WaitForSeconds(0.1f);
         }
     }
@@ -218,7 +223,8 @@ public class WaveManager : MonoBehaviour
     private IEnumerator StartFinalBoss()
     {
         if (!HasWaveEvent(finalZombieWave, "SpawnFinalBoss")) yield break;
-      
+        AudioManager.Instance?.PauseMusic();
+
 
         GameObject resolvedFinalBossPrefab = finalBossPrefab != null ? finalBossPrefab : boss1Prefab;
         Sprite faceSprite = finalBossSprites[0];
@@ -250,7 +256,6 @@ public class WaveManager : MonoBehaviour
         }
 
         // Stop music after the first reveal; keep it paused through the decoy and second reveal.
-        AudioManager.Instance?.PauseMusic();
 
         List<GameObject> decoys = new List<GameObject>();
         for (int i = 0; i < startingWaveSize + (wC * waveTide); i++)
@@ -296,7 +301,6 @@ public class WaveManager : MonoBehaviour
         }
 
         // Music returns only after the second reveal is complete.
-        AudioManager.Instance?.ResumeMusic();
 
         yield return new WaitForSeconds(1);
         Vector2 spawnpositioning = Vector2.zero;
@@ -341,6 +345,7 @@ public class WaveManager : MonoBehaviour
 
 
         RegisterEnemy(finalBoss);
+        AudioManager.Instance?.ResumeMusic();
         yield return new WaitForSeconds(0.1f);
         finalBoss.transform.position = spawnpositioning;
     }
@@ -353,6 +358,9 @@ public class WaveManager : MonoBehaviour
 
         GameObject boss = Instantiate(bossPrefab, pos, Quaternion.identity);
         boss.name = "Final Boss (Boss 1 Prefab)";
+        UNSEENCUTSCENEDEATH ucd = GetComponent<UNSEENCUTSCENEDEATH>();
+        ucd.sts = boss.GetComponent<charStats>();
+        ucd.enabled = true;
         if (boss.TryGetComponent(out charStats bossStats))
         {
             bossStats.currentHealth = bossStats.maxHealth;

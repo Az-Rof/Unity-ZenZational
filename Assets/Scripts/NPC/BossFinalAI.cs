@@ -120,6 +120,7 @@ public class BossFinalAI : MonoBehaviour
         stats.OnCharacterDied += HandleDeath;
         if (stats.IsDead) HandleDeath(gameObject);
         legs.PlayAnimation("LegMove");
+        AudioManager.Instance.PlayMusic("finalboss");
     }
 
     private void Update()

@@ -321,9 +321,9 @@ public class Boss1AI : MonoBehaviour
             yield return new WaitForSeconds(attackWindupDuration);
             GameObject barrelInstance = Instantiate(barrel, transform.position, Quaternion.identity);
             ExplosiveBarrel br = barrelInstance.GetComponent<ExplosiveBarrel>();
-        
 
-           
+            br.damage = barrelDamage;
+            br.targetPlayer = cachedPlayerCtrl.transform;           
             float ran = Random.Range(25f, 100f)/100f;
             br.landingPos = targetPlayer.position + new Vector3(horizontal*cachedPlayerStats.speed *ran, vertical*cachedPlayerStats.speed*ran, 0);
             Vector2 direction = ((Vector2)targetPlayer.position - (Vector2)transform.position).normalized;

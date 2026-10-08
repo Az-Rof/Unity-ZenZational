@@ -173,6 +173,24 @@ public class GlitchingManager : MonoBehaviour
         StopGlitch();
     }
 
+    public IEnumerator PlayFakePowerOff2(float blackHoldSeconds = 1.25f)
+    {
+        Image overlay = GetPowerOffOverlay();
+        SetOverlayAlpha(overlay, 0f);
+
+        float[] flickerAlpha = { 0.12f, 1f, 0.05f, 1f };
+        foreach (float alpha in flickerAlpha)
+        {
+            SetOverlayAlpha(overlay, alpha);
+            ApplyGlitch((int)effectMode, 85, 0.12f, true, true);
+            yield return new WaitForSecondsRealtime(0.07f);
+        }
+
+        StopGlitch();
+        SetOverlayAlpha(overlay, 1f);
+        yield return new WaitForSecondsRealtime(Mathf.Max(0f, blackHoldSeconds));
+    }
+
     /// <summary>Blackout, silent face lunge, stare, scream, then a quick cut back.</summary>
     public IEnumerator PlayFaceReveal(
         Sprite faceSprite,
@@ -381,6 +399,11 @@ public class GlitchingManager : MonoBehaviour
     public void StartGlitchAudioLoop()
     {
         StartGlitchAudio();
+    }
+
+    public void SetGlitchPitch(float scl)
+    {
+        glitchLoopSource.pitch = 1f + scl;
     }
 
     /// <summary>Stops the glitch loop without changing the visual effect.</summary>

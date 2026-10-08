@@ -5007,9 +5007,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::charStats
   CharacterName: 
   CharacterType: 
-  currentHealth: 100
-  maxHealth: 1000
-  attackPower: 30
+  currentHealth: 15000
+  maxHealth: 15000
+  attackPower: 40
   attackRange: 1.5
   attackCooldown: 0.8
   speed: 6
@@ -5022,7 +5022,7 @@ MonoBehaviour:
   - ZombieDeath1
   - ZombieDeath2
   - ZombieDeath3
-  deathParticle: {fileID: 7047878117534592056, guid: 2c715de95cfec474fa3dd6511de5c512, type: 3}
+  deathParticle: {fileID: 7047878117534592056, guid: 861c43502182b6b44ab6378ba57ad2f0, type: 3}
   invulnerabilityDuration: 0.4
   useInvulnerabilityOnDamage: 0
   damageReduction: 0
@@ -5120,8 +5120,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Boss1AI
   currentState: 0
   targetPlayer: {fileID: 0}
-  directLandingDamage: 75
-  barrelDamage: 20
+  directLandingDamage: 80
+  barrelDamage: 35
   shockwaveDamage: 10
   screenRadius: 30
   jumpEndlagDuration: 1.5
