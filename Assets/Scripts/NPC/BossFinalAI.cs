@@ -352,7 +352,7 @@ public class BossFinalAI : MonoBehaviour
         currentState = FinalBossState.GlitchSwap;
         StopMovement();
         glitchingManager?.PlayGlitchSilently(2, 90, 0.45f);
-        AudioManager.Instance.PlaySFX("Glitch2");
+        AudioManager.Instance.PlaySFX("glitch2");
 
         Vector2 bossPosition = transform.position;
         Vector2 playerPosition = targetPlayer.position;

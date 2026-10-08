@@ -13,6 +13,7 @@ public class AudioManager : MonoBehaviour
     public AudioSource musicSource, sfxSource; // AudioSource 
     private string currentSceneName;
     private bool isInitialized = false;
+    private bool musicPausedByRequest;
 
     public Slider musicSlider;
     public Slider sfxSlider;
@@ -156,6 +157,8 @@ public class AudioManager : MonoBehaviour
             return;
         }
 
+        musicPausedByRequest = false;
+
         if (musicSource.clip == sound.audioClip && musicSource.isPlaying)
         {
             Debug.Log($"Music {name} is already playing.");
@@ -169,6 +172,20 @@ public class AudioManager : MonoBehaviour
         musicSource.Play();
 
         Debug.Log($"Now playing: {name}");
+    }
+
+    public void PauseMusic()
+    {
+        musicPausedByRequest = true;
+        if (musicSource != null && musicSource.isPlaying)
+            musicSource.Pause();
+    }
+
+    public void ResumeMusic()
+    {
+        musicPausedByRequest = false;
+        if (Time.timeScale > 0f && musicSource != null && musicSource.clip != null)
+            musicSource.UnPause();
     }
 
     public void PlaySFX(string name, float startTime = 0f, float finishTime = 0f)
@@ -350,9 +367,9 @@ public class AudioManager : MonoBehaviour
         // Pause music source when game is paused
         if (musicSource != null)
         {
-            if (isPaused && musicSource.isPlaying)
+            if ((isPaused || musicPausedByRequest) && musicSource.isPlaying)
                 musicSource.Pause();
-            else if (!isPaused && !musicSource.isPlaying && musicSource.clip != null)
+            else if (!isPaused && !musicPausedByRequest && !musicSource.isPlaying && musicSource.clip != null)
                 musicSource.UnPause();
         }
 

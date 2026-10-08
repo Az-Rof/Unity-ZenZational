@@ -115,7 +115,8 @@ public class GlitchingManager : MonoBehaviour
     /// <summary>Short story beat used when entering a more corrupted wave.</summary>
     public void PlayWaveGlitch(int strengthPercent, float effectDuration)
     {
-        PlayGlitch((int)effectMode, strengthPercent, effectDuration);
+        // Wave corruption is visual only; reserve the loop SFX for the final reveal transition.
+        ApplyGlitch((int)effectMode, strengthPercent, effectDuration, false, true);
     }
 
     /// <summary>Sets persistent corruption using the selected Inspector mode.</summary>
@@ -130,7 +131,8 @@ public class GlitchingManager : MonoBehaviour
     /// <summary>Plays the selected glitch effect before the final reveal blackout.</summary>
     public void PlayRevealGlitch(int strengthPercent, float effectDuration)
     {
-        PlayGlitch((int)effectMode, strengthPercent, effectDuration);
+        // The transition loop begins after the final face reveal, not during this visual lead-in.
+        ApplyGlitch((int)effectMode, strengthPercent, effectDuration, false, true);
     }
 
     public void ClearWaveGlitch()
@@ -179,7 +181,8 @@ public class GlitchingManager : MonoBehaviour
         float stareSeconds = 1f,
         float faceScale = 1.5f,
         System.Action onScream = null,
-        System.Action onCutBack = null)
+        System.Action onCutBack = null,
+        bool playScream = true)
     {
         Image blackOverlay = GetPowerOffOverlay();
         Image faceOverlay = GetFaceRevealOverlay(blackOverlay);
@@ -206,8 +209,15 @@ public class GlitchingManager : MonoBehaviour
         if (faceSprite != null)
         {
             SetOverlayAlpha(faceOverlay, 1f);
-            PlayFaceRevealScream();
-            onScream?.Invoke();
+            if (playScream)
+            {
+                PlayFaceRevealScream();
+                onScream?.Invoke();
+            }
+            else
+            {
+                RestoreRevealAudio();
+            }
 
             float elapsed = 0f;
             float duration = Mathf.Max(0.01f, faceRevealSeconds);
@@ -222,6 +232,9 @@ public class GlitchingManager : MonoBehaviour
             faceRect.localScale = Vector3.one * Mathf.Max(0.01f, faceScale);
             yield return new WaitForSecondsRealtime(Mathf.Max(0f, stareSeconds));
         }
+
+        // Also restore audio if the reveal sprite was not assigned.
+        RestoreRevealAudio();
 
         // Hold the face under darkness while the scream begins, then reveal the
         // boss opening attack at the cut back to gameplay.
@@ -267,7 +280,8 @@ public class GlitchingManager : MonoBehaviour
         Image faceOverlay = GetFaceRevealOverlay(blackOverlay);
         RectTransform faceRect = faceOverlay.rectTransform;
 
-        StopGlitch();
+        // The transition loop starts after the first reveal and should continue through this second reveal.
+        StopGlitch(false);
         savedAudioListenerVolume = AudioListener.volume;
         audioMutedForFaceReveal = true;
         AudioListener.volume = 0f;
@@ -328,6 +342,11 @@ public class GlitchingManager : MonoBehaviour
     [ContextMenu("Stop Glitch")]
     public void StopGlitch()
     {
+        StopGlitch(true);
+    }
+
+    private void StopGlitch(bool stopAudio)
+    {
         if (stopRoutine != null)
         {
             StopCoroutine(stopRoutine);
@@ -346,7 +365,8 @@ public class GlitchingManager : MonoBehaviour
         if (digital != null)
             digital.Intensity = 0f;
 
-        StopGlitchAudio();
+        if (stopAudio)
+            StopGlitchAudio();
     }
 
     private void StartGlitchAudio()
@@ -355,6 +375,18 @@ public class GlitchingManager : MonoBehaviour
             return;
 
         glitchLoopSource = AudioManager.Instance.PlaySFXLoop(glitchSfxName);
+    }
+
+    /// <summary>Starts the glitch loop for the final reveal-to-boss transition.</summary>
+    public void StartGlitchAudioLoop()
+    {
+        StartGlitchAudio();
+    }
+
+    /// <summary>Stops the glitch loop without changing the visual effect.</summary>
+    public void StopGlitchAudioLoop()
+    {
+        StopGlitchAudio();
     }
 
     private void StopGlitchAudio()
@@ -371,11 +403,7 @@ public class GlitchingManager : MonoBehaviour
 
     private void PlayFaceRevealScream()
     {
-        if (audioMutedForFaceReveal)
-        {
-            AudioListener.volume = savedAudioListenerVolume;
-            audioMutedForFaceReveal = false;
-        }
+        RestoreRevealAudio();
 
         if (AudioManager.Instance != null)
         {
@@ -391,6 +419,14 @@ public class GlitchingManager : MonoBehaviour
             Debug.LogWarning(
                 $"[GlitchingManager] No AudioManager is available to play '{faceRevealScreamSfxName}', and no fallback scream clip is assigned.",
                 this);
+    }
+
+    private void RestoreRevealAudio()
+    {
+        if (!audioMutedForFaceReveal) return;
+
+        AudioListener.volume = savedAudioListenerVolume;
+        audioMutedForFaceReveal = false;
     }
 
     private IEnumerator StopAfterDelay(float delay)

@@ -229,7 +229,6 @@ public class WaveManager : MonoBehaviour
         }
 
         GameObject finalBoss = null;
-        Boss1AI finalBossAI = null;
         if (glitchingManager != null)
         {
             glitchingManager.PlayRevealGlitch(wave3GlitchPercent, 0.35f);
@@ -239,13 +238,19 @@ public class WaveManager : MonoBehaviour
                 finalRevealBlackDuration,
                 finalFaceLungeDuration,
                 finalFaceStareDuration,
-                finalFaceScale
+                finalFaceScale,
+                playScream: false
                 );
+            // Start the transition loop after the first face reveal and keep it through the final boss spawn.
+            glitchingManager.StartGlitchAudioLoop();
         }
         else
         {
             Debug.LogWarning("[WaveManager] GlitchingManager is not assigned; skipping the cinematic blackout and face reveal.", this);
         }
+
+        // Stop music after the first reveal; keep it paused through the decoy and second reveal.
+        AudioManager.Instance?.PauseMusic();
 
         List<GameObject> decoys = new List<GameObject>();
         for (int i = 0; i < startingWaveSize + (wC * waveTide); i++)
@@ -290,6 +295,9 @@ public class WaveManager : MonoBehaviour
             Debug.LogWarning("[WaveManager] GlitchingManager is not assigned; skipping the cinematic blackout and face reveal.", this);
         }
 
+        // Music returns only after the second reveal is complete.
+        AudioManager.Instance?.ResumeMusic();
+
         yield return new WaitForSeconds(1);
         Vector2 spawnpositioning = Vector2.zero;
         if (decoys.Count > 0)
@@ -317,6 +325,10 @@ public class WaveManager : MonoBehaviour
                 Debug.LogWarning("[WaveManager] Assign finalBossPrefab or boss1Prefab to start the final boss encounter.", this);
             }
         }
+
+        if (glitchingManager != null)
+            glitchingManager.StopGlitchAudioLoop();
+
         foreach (GameObject decoy in decoys)
         {
             if (decoy != null)
