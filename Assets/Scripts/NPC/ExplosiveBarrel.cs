@@ -87,7 +87,7 @@ public class ExplosiveBarrel : MonoBehaviour
         Vector2 startPosition = transform.position;
         float duration = Mathf.Max(0.05f, Vector2.Distance(startPosition, landingPos) / Mathf.Max(0.1f, flightSpeed));
         float elapsedTime = 0f;
-
+        AudioManager.Instance.PlaySFX("barrelthrow");
         GameObject warning = null;
         SpriteRenderer warningRenderer = null;
         if (circ != null)

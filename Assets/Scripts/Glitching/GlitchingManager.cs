@@ -208,6 +208,102 @@ public class GlitchingManager : MonoBehaviour
         SetOverlayAlpha(blackOverlay, 0f);
     }
 
+    void cutsceneGlitch()
+    {
+        digital.Intensity = Mathf.Lerp(digital.Intensity, 1f, Time.deltaTime * 2f);
+        analog.ScanLineJitter = Mathf.Lerp(analog.ScanLineJitter, 1f, Time.deltaTime * 2f);
+        analog.ColorDrift = Mathf.Lerp(analog.ColorDrift, 1f, Time.deltaTime * 2f);
+        analog.VerticalJump = Mathf.Lerp(analog.VerticalJump, 1f, Time.deltaTime * 2f);
+        analog.HorizontalShake = Mathf.Lerp(analog.HorizontalShake, 1f, Time.deltaTime * 2f);
+        analog.HorizontalRipple = Mathf.Lerp(analog.HorizontalRipple, 1f, Time.deltaTime * 2f);
+    }
+
+    void restGlitch()
+    {
+        digital.Intensity = 0;
+        analog.ScanLineJitter = 0;
+        analog.ColorDrift = 0;
+        analog.VerticalJump = 0;
+        analog.HorizontalShake = 0;
+        analog.HorizontalRipple = 0;
+    }
+
+    public IEnumerator PlayFaceReveal2(
+       Sprite faceSprite1, Sprite faceSprite2,
+       float blackHoldSeconds = 2f,
+       float faceRevealSeconds = 0.12f,
+       float stareSeconds = 1f,
+       float faceScale = 1.5f,
+       System.Action onScream = null,
+       System.Action onCutBack = null)
+    {
+        Image blackOverlay = GetPowerOffOverlay();
+        Image faceOverlay = GetFaceRevealOverlay(blackOverlay);
+        RectTransform faceRect = faceOverlay.rectTransform;
+
+        StopGlitch();
+        savedAudioListenerVolume = AudioListener.volume;
+        audioMutedForFaceReveal = true;
+        AudioListener.volume = 0f;
+        blackOverlay.sprite = null;
+        blackOverlay.color = Color.black;
+        blackOverlay.raycastTarget = false;
+        SetOverlayAlpha(blackOverlay, 1f);
+
+        faceOverlay.sprite = faceSprite1;
+        faceOverlay.preserveAspect = true;
+        faceOverlay.color = Color.white;
+        faceOverlay.enabled = faceSprite1 != null;
+        faceRect.localScale = Vector3.one * 0.01f;
+        SetOverlayAlpha(faceOverlay, 0f);
+
+        // Remain silent while the screen is black, then reveal and lunge the face.
+        if (faceSprite1 != null)
+        {
+            SetOverlayAlpha(faceOverlay, 1f);
+            float elapsed = 0f;
+            float duration = Mathf.Max(0.01f, faceRevealSeconds);
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                float easedT = 1f - Mathf.Pow(1f - t, 3f);
+                faceRect.localScale = Vector3.one * Mathf.Lerp(0.01f, Mathf.Max(0.01f, faceScale), easedT);
+                yield return null;
+            }
+            faceRect.localScale = Vector3.one * Mathf.Max(0.01f, faceScale);
+        }
+
+        AudioListener.volume = savedAudioListenerVolume;
+        audioMutedForFaceReveal = false;
+        if (faceRevealScream != null)
+            AudioSource.PlayClipAtPoint(faceRevealScream, Camera.main != null ? Camera.main.transform.position : Vector3.zero);
+        else
+            Debug.LogWarning("[GlitchingManager] Assign Face Reveal Scream to play the final boss scream.", this);
+        onScream?.Invoke();
+
+        int oldIntensityPercent = intensityPercent;
+        intensityPercent = 100;
+
+        for (int i = 0; i < 80; i++)
+        {
+            faceOverlay.sprite = (i % 2 == 0) ? faceSprite2 : faceSprite1;
+            cutsceneGlitch();
+            yield return new WaitForSecondsRealtime(0.05f);
+        }
+        intensityPercent = oldIntensityPercent;
+        restGlitch();
+        // Hold the face under darkness while the scream begins, then reveal the
+        // boss opening attack at the cut back to gameplay.
+        yield return new WaitForSecondsRealtime(0.1f);
+        onCutBack?.Invoke();
+        faceOverlay.enabled = false;
+        faceOverlay.sprite = null;
+        faceOverlay.color = Color.white;
+        faceRect.localScale = Vector3.one;
+        SetOverlayAlpha(blackOverlay, 0f);
+    }
+
     [ContextMenu("Stop Glitch")]
     public void StopGlitch()
     {

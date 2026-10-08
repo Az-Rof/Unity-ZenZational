@@ -193,6 +193,11 @@ public class playerController : MonoBehaviour
             if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) horizontal += 1f;
             if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) vertical += 1f;
             if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) vertical -= 1f;
+
+            if (Keyboard.current.bKey.isPressed)
+            {
+                BuffSystem.Instance.TriggerBuffSelection();
+            }
         }
 
         Vector2 direction = new Vector2(horizontal, vertical).normalized;

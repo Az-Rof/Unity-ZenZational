@@ -5022,6 +5022,7 @@ MonoBehaviour:
   - ZombieDeath1
   - ZombieDeath2
   - ZombieDeath3
+  deathParticle: {fileID: 7047878117534592056, guid: 2c715de95cfec474fa3dd6511de5c512, type: 3}
   invulnerabilityDuration: 0.4
   useInvulnerabilityOnDamage: 0
   damageReduction: 0

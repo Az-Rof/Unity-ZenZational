@@ -25,6 +25,7 @@ public class BossFinalAI : MonoBehaviour
     [Header("State & Target")]
     [SerializeField] private FinalBossState currentState = FinalBossState.Chase;
     [SerializeField] private Transform targetPlayer;
+    [SerializeField] private ZombieAnimator legs;
 
     [Header("Ranges & Timing")]
     [Tooltip("Within this distance, the boss chooses between a jump attack and a stomp shockwave.")]
@@ -83,6 +84,8 @@ public class BossFinalAI : MonoBehaviour
     [SerializeField] private ZombieAnimator zombieAnimator;
     [SerializeField] private string walkAnimation = "Walking";
     [SerializeField] private string attackAnimation = "Attack";
+    [SerializeField] private string attackAnimation2 = "Attack2";
+
     [Tooltip("Rotate the boss toward the player. Use a 90 degree offset for sprites whose default facing direction is up.")]
     [SerializeField] private bool rotateTowardsPlayer = true;
     [SerializeField] private float facingRotationOffset = 90f;
@@ -116,6 +119,7 @@ public class BossFinalAI : MonoBehaviour
         FindPlayerTarget();
         stats.OnCharacterDied += HandleDeath;
         if (stats.IsDead) HandleDeath(gameObject);
+        legs.PlayAnimation("LegMove");
     }
 
     private void Update()
@@ -226,7 +230,7 @@ public class BossFinalAI : MonoBehaviour
     {
         currentState = FinalBossState.Windup;
         StopMovement();
-        PlayAnimation(attackAnimation);
+        PlayAnimation(attackAnimation2);
         yield return new WaitForSeconds(attackWindup);
         if (stats.IsDead || targetPlayer == null) yield break;
 
@@ -540,17 +544,17 @@ public class BossFinalAI : MonoBehaviour
         {
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.AngleAxis(angle + facingRotationOffset, Vector3.forward);
-            if (spriteRenderer != null) spriteRenderer.flipX = false;
         }
-        else if (flipSpriteTowardPlayer && spriteRenderer != null && Mathf.Abs(direction.x) > 0.01f)
-        {
-            spriteRenderer.flipX = direction.x < 0f;
-        }
+       
     }
 
     private void PlayAnimation(string animationName)
     {
         if (zombieAnimator == null || string.IsNullOrEmpty(animationName)) return;
+        if (animationName == attackAnimation)
+        {
+            spriteRenderer.flipX = Random.Range(0, 2) == 1;
+        }
         zombieAnimator.PlayAnimation(animationName);
     }
 

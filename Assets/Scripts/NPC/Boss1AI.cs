@@ -357,6 +357,7 @@ public class Boss1AI : MonoBehaviour
         GameObject landingTelegraph = attackCirc != null
             ? Instantiate(attackCirc, landingPosition, Quaternion.identity)
             : null;
+        Destroy(landingTelegraph, 10f);
         if (landingTelegraph != null) landingTelegraph.transform.localScale = new Vector2(15f, 15f);
         SpriteRenderer telegraphRenderer = landingTelegraph != null
             ? landingTelegraph.GetComponent<SpriteRenderer>()

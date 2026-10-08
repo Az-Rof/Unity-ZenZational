@@ -189,6 +189,7 @@ public class BuffSelectionUI : MonoBehaviour
             return;
         }
 
+   
         // Keyboard shortcuts while the menu is open: 1 / 2 / 3 pick a card.
         if (!IsOpen || currentChoices.Count == 0) return;
 

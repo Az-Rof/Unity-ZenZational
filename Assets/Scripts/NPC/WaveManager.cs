@@ -1,3 +1,4 @@
+using KinoGlitch;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -14,7 +15,7 @@ public class WaveManager : MonoBehaviour
     [SerializeField] private GameObject finalBossPrefab;
     [SerializeField] private GameObject finalBossDecoyPrefab;
     [SerializeField] private GameObject finalBossExplosionPrefab;
-    [SerializeField] private Sprite finalBossRevealFace;
+    [SerializeField] private Sprite[] finalBossSprites;
     
     [SerializeField] private waveEvents[] events;
     [SerializeField, Min(0)] private int startingWaveSize = 10;
@@ -53,6 +54,9 @@ public class WaveManager : MonoBehaviour
     [SerializeField, Min(0f)] private float finalBossPlaceholderDamage = 35f;
     [SerializeField, Min(1f)] private float decoyBossHealth = 300f;
     [SerializeField] private bool allowFinalBossPlaceholder = true;
+
+
+
 
     [Header("Runtime State (read only)")]
     [SerializeField] public int wC;
@@ -209,42 +213,15 @@ public class WaveManager : MonoBehaviour
         }
     }
 
+ 
+
     private IEnumerator StartFinalBoss()
     {
         if (!HasWaveEvent(finalZombieWave, "SpawnFinalBoss")) yield break;
-
-        GameObject decoyPrefab = finalBossDecoyPrefab != null ? finalBossDecoyPrefab : zombiePrefab;
-        GameObject decoy = null;
-        if (decoyPrefab != null)
-        {
-            decoy = Instantiate(decoyPrefab, RandomSpawnPosition(8f, 10f), Quaternion.identity);
-            decoy.name = "Final Reveal Decoy (Zombie)";
-            if (decoy.TryGetComponent(out charStats decoyStats))
-            {
-                decoyStats.speed = Mathf.Max(decoyStats.speed, 3f);
-                decoyStats.maxHealth = decoyBossHealth;
-                decoyStats.currentHealth = decoyBossHealth;
-            }
-            else
-            {
-                Debug.LogWarning("[WaveManager] The final reveal decoy prefab needs charStats to be tracked and defeated.", decoy);
-            }
-            RegisterEnemy(decoy);
-        }
-
-        // Give the player a short moment to notice/defeat the ordinary zombie decoy.
-        yield return new WaitForSeconds(Mathf.Max(0f, finalDecoyRevealDelay));
-
-        if (decoy != null)
-        {
-            if (finalBossExplosionPrefab != null)
-                Instantiate(finalBossExplosionPrefab, decoy.transform.position, Quaternion.identity);
-            activeEnemies.Remove(decoy);
-            Destroy(decoy);
-        }
+      
 
         GameObject resolvedFinalBossPrefab = finalBossPrefab != null ? finalBossPrefab : boss1Prefab;
-        Sprite faceSprite = finalBossRevealFace;
+        Sprite faceSprite = finalBossSprites[0];
         if (faceSprite == null && resolvedFinalBossPrefab != null)
         {
             SpriteRenderer faceRenderer = resolvedFinalBossPrefab.GetComponentInChildren<SpriteRenderer>();
@@ -262,47 +239,107 @@ public class WaveManager : MonoBehaviour
                 finalRevealBlackDuration,
                 finalFaceLungeDuration,
                 finalFaceStareDuration,
-                finalFaceScale,
-                () => finalBoss = SpawnFinalBoss(resolvedFinalBossPrefab, false),
-                () =>
-                {
-                    finalBossAI = finalBoss != null ? finalBoss.GetComponent<Boss1AI>() : null;
-                    finalBossAI?.TriggerOpeningAttack();
-                    if (finalBoss != null && finalBossPrefab == null)
-                        finalBoss.name = "Final Boss (Boss 1 Prefab)";
-                });
+                finalFaceScale
+                );
         }
         else
         {
             Debug.LogWarning("[WaveManager] GlitchingManager is not assigned; skipping the cinematic blackout and face reveal.", this);
         }
 
-        if (finalBoss == null && resolvedFinalBossPrefab != null)
+        List<GameObject> decoys = new List<GameObject>();
+        for (int i = 0; i < startingWaveSize + (wC * waveTide); i++)
         {
-            finalBoss = SpawnFinalBoss(resolvedFinalBossPrefab, true);
+            GameObject decoyPrefab = finalBossDecoyPrefab != null ? finalBossDecoyPrefab : zombiePrefab;
+            GameObject decoy = null;
+            if (decoyPrefab != null)
+            {
+                decoy = Instantiate(decoyPrefab, RandomSpawnPosition(15f, 20f), Quaternion.identity);
+                decoy.name = "Final Reveal Decoy (Zombie)";
+                if (decoy.TryGetComponent(out charStats decoyStats))
+                {
+                    decoyStats.speed = Mathf.Max(decoyStats.speed, 3f);
+                    decoyStats.maxHealth = decoyBossHealth;
+                    decoyStats.currentHealth = decoyBossHealth;
+                }
+                else
+                {
+                    Debug.LogWarning("[WaveManager] The final reveal decoy prefab needs charStats to be tracked and defeated.", decoy);
+                }
+                RegisterEnemy(decoy);
+                decoys.Insert(0, decoy);
+            }
         }
-        else if (finalBoss == null && allowFinalBossPlaceholder)
+        // Give the player a short moment to notice/defeat the ordinary zombie decoy.
+        yield return new WaitForSeconds(finalDecoyRevealDelay);
+
+        if (glitchingManager != null)
         {
-            finalBoss = CreateFinalBossPlaceholder(RandomSpawnPosition(4f, 6f));
-            Debug.LogWarning("[WaveManager] Neither finalBossPrefab nor boss1Prefab is assigned. A temporary generic placeholder was spawned.", this);
+            glitchingManager.PlayRevealGlitch(wave3GlitchPercent, 0.35f);
+            yield return new WaitForSecondsRealtime(0.35f);
+            yield return glitchingManager.PlayFaceReveal2(
+               finalBossSprites[1], finalBossSprites[2],
+                finalRevealBlackDuration,
+                finalFaceLungeDuration,
+                finalFaceStareDuration,
+                finalFaceScale
+                );
         }
-        else if (finalBoss == null)
+        else
         {
-            Debug.LogWarning("[WaveManager] Assign finalBossPrefab or boss1Prefab to start the final boss encounter.", this);
+            Debug.LogWarning("[WaveManager] GlitchingManager is not assigned; skipping the cinematic blackout and face reveal.", this);
         }
+
+        yield return new WaitForSeconds(1);
+        Vector2 spawnpositioning = Vector2.zero;
+        if (decoys.Count > 0)
+        {
+            GameObject realOne = decoys[Random.Range(0, decoys.Count)];
+            if (finalBossExplosionPrefab != null)
+            {
+                Instantiate(finalBossExplosionPrefab, realOne.transform.position, Quaternion.identity);
+                spawnpositioning = realOne.transform.position;  
+                realOne.GetComponent<charStats>().currentHealth = 1;
+                realOne.GetComponent<charStats>().TakeDamage(20);
+                activeEnemies.Remove(realOne);
+            }
+            if (finalBoss == null && resolvedFinalBossPrefab != null)
+            {
+                finalBoss = SpawnFinalBoss(resolvedFinalBossPrefab, true, realOne.transform.position);
+            }
+            else if (finalBoss == null && allowFinalBossPlaceholder)
+            {
+                finalBoss = CreateFinalBossPlaceholder(RandomSpawnPosition(4f, 6f));
+                Debug.LogWarning("[WaveManager] Neither finalBossPrefab nor boss1Prefab is assigned. A temporary generic placeholder was spawned.", this);
+            }
+            else if (finalBoss == null)
+            {
+                Debug.LogWarning("[WaveManager] Assign finalBossPrefab or boss1Prefab to start the final boss encounter.", this);
+            }
+        }
+        foreach (GameObject decoy in decoys)
+        {
+            if (decoy != null)
+            {
+                decoy.GetComponent<charStats>().currentHealth = 1;
+                decoy.GetComponent<charStats>().TakeDamage(20);
+                finalBoss.transform.position = spawnpositioning;
+            }
+        }
+
 
         RegisterEnemy(finalBoss);
+        yield return new WaitForSeconds(0.1f);
+        finalBoss.transform.position = spawnpositioning;
     }
 
-    private GameObject SpawnFinalBoss(GameObject bossPrefab, bool triggerOpeningAttack)
+    private GameObject SpawnFinalBoss(GameObject bossPrefab, bool triggerOpeningAttack, Vector3 pos)
     {
         if (bossPrefab == null) return null;
 
-        Vector3 spawnPosition = RandomSpawnPosition(4f, 6f);
-        if (playerTransform != null)
-            spawnPosition = playerTransform.position + Vector3.right * 30f;
+ 
 
-        GameObject boss = Instantiate(bossPrefab, spawnPosition, Quaternion.identity);
+        GameObject boss = Instantiate(bossPrefab, pos, Quaternion.identity);
         boss.name = "Final Boss (Boss 1 Prefab)";
         if (boss.TryGetComponent(out charStats bossStats))
         {

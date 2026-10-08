@@ -23,6 +23,7 @@ public class charStats : MonoBehaviour
 
     public string[] damageSounds;
     public string[] deathSounds;
+    public GameObject deathParticle;
 
 
     [Header("Invulnerability & Feedback")]
@@ -337,13 +338,18 @@ public class charStats : MonoBehaviour
         isDead = true;
         if (deathSounds != null && deathSounds.Length > 0)
         {
+            if (deathParticle != null)
+            {
+               GameObject efx = Instantiate(deathParticle, transform.position, Quaternion.identity);
+                Destroy(efx, 2f);
+            }
             string soundToPlay = deathSounds[UnityEngine.Random.Range(0, deathSounds.Length)];
             AudioManager.Instance?.PlaySFX(soundToPlay);
         }
         Debug.Log($"{gameObject.name} has died.");
         OnCharacterDied?.Invoke(gameObject);
 
-        Destroy(gameObject);
+        Destroy(gameObject, gameObject.name == "Player" ? 9999f : 0f);
 
         // If this gameobject == player
         if (this.gameObject.tag == "Player" || this.gameObject.name == "Player")

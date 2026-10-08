@@ -114,7 +114,7 @@ MonoBehaviour:
   currentHealth: 0
   maxHealth: 100
   attackPower: 10
-  attackRange: 2
+  attackRange: 2.2
   attackCooldown: 0.8
   speed: 5
   lastAttackTime: 0
@@ -126,6 +126,7 @@ MonoBehaviour:
   - ZombieDeath1
   - ZombieDeath2
   - ZombieDeath3
+  deathParticle: {fileID: 7047878117534592056, guid: 2c715de95cfec474fa3dd6511de5c512, type: 3}
   invulnerabilityDuration: 0.4
   useInvulnerabilityOnDamage: 0
   damageReduction: 0

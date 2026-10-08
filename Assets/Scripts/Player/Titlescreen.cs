@@ -23,6 +23,11 @@ public class Titlescreen : MonoBehaviour
             AudioManager.Instance.PlayMusic("WaveMusic");
             Cursor.visible = false;
         }
+        else if (SceneManager.GetActiveScene().buildIndex == 2)
+        {
+            AudioManager.Instance.PlayMusic("credits");
+            Cursor.visible = true;
+        }
     }
 
     void Update()
